@@ -5,7 +5,7 @@ set -euo pipefail
 
 TV="${1:?usage: scripts/install.sh <tv-ip> [apk]}"
 APK="${2:-app/build/outputs/apk/debug/app-debug.apk}"
-DEV="$TV:5555"
+case "$TV" in *:*) DEV="$TV" ;; *) DEV="$TV:5555" ;; esac   # accepts "ip" or "ip:port"
 
 command -v adb >/dev/null || { echo "adb not found. Install android-tools-adb / platform-tools first."; exit 1; }
 [ -f "$APK" ] || { echo "APK not found: $APK (build it with ./gradlew assembleDebug, or download one from the Releases page)"; exit 1; }

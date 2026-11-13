@@ -4,7 +4,7 @@
 set -euo pipefail
 TV="${1:?usage: scripts/push-config.sh <tv-ip> [config.json]}"
 CFG="${2:-config.json}"
-DEV="$TV:5555"
+case "$TV" in *:*) DEV="$TV" ;; *) DEV="$TV:5555" ;; esac   # accepts "ip" or "ip:port"
 python3 -m json.tool "$CFG" >/dev/null || { echo "$CFG is not valid JSON"; exit 1; }
 adb connect "$DEV"
 adb -s "$DEV" shell mkdir -p /sdcard/Android/data/dev.oliver.home/files

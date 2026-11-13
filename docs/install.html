@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install RietveldTV</title>
+<meta name="description" content="Step-by-step guide to install the RietveldTV home screen on an Android TV or Google TV. Requirements first, about ten minutes, no root needed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300;400;500&display=swap">
+<style>
+  :root { --bg:#000; --fg:#f2f0f0; --dim:rgba(242,240,240,.62); --line:rgba(242,240,240,.2); --red:#cd1e26; --blue:#1e46c8; --yellow:#f8c828; }
+  :root[data-theme="light"] { --bg:#f2f0f0; --fg:#111; --dim:rgba(17,17,17,.62); --line:rgba(17,17,17,.2); }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg:#f2f0f0; --fg:#111; --dim:rgba(17,17,17,.62); --line:rgba(17,17,17,.2); } }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:300 18px/1.65 "IBM Plex Sans", system-ui, sans-serif; }
+  a { color:var(--fg); text-underline-offset:3px; }
+  main { max-width:820px; margin:0 auto; padding:0 20px 90px; }
+  header.top { display:flex; align-items:center; gap:14px; padding:28px 0 0; font:400 13px "IBM Plex Mono", monospace; letter-spacing:.08em; color:var(--dim); }
+  .sq { display:inline-block; width:10px; height:10px; margin-right:4px; } .sq.r{background:var(--red)} .sq.b{background:var(--blue)} .sq.y{background:var(--yellow)}
+  nav { margin-left:auto; display:flex; gap:18px; flex-wrap:wrap; justify-content:flex-end; }
+  nav a { color:var(--dim); text-decoration:none; } nav a:hover { color:var(--fg); }
+  h1 { font-weight:300; font-size:clamp(38px,8vw,68px); line-height:1.05; margin:48px 0 14px; letter-spacing:-.01em; }
+  h2 { font-weight:300; font-size:30px; margin:0 0 6px; }
+  .lead { color:var(--dim); font-size:clamp(18px,2.4vw,21px); max-width:40ch; margin:0 0 24px; }
+  .kicker { font:400 12px "IBM Plex Mono", monospace; letter-spacing:.14em; color:var(--dim); text-transform:uppercase; margin:0 0 8px; }
+  .rule { position:relative; height:1px; background:var(--line); margin:64px 0 32px; }
+  .rule::before,.rule::after { content:""; position:absolute; top:-2px; width:22px; height:5px; background:var(--yellow); }
+  .rule::before{left:0} .rule::after{right:0}
+  .meta { display:flex; gap:26px; flex-wrap:wrap; font:400 13px "IBM Plex Mono", monospace; letter-spacing:.06em; color:var(--dim); }
+  .meta b { color:var(--fg); font-weight:400; }
+  ul.req { list-style:none; padding:0; margin:20px 0 0; }
+  ul.req > li { border-top:1px solid var(--line); padding:14px 0 14px 44px; position:relative; }
+  ul.req > li::before { content:""; position:absolute; left:2px; top:20px; width:16px; height:16px; border:2px solid var(--fg); }
+  ul.req strong { font-weight:500; display:block; }
+  ul.req span { color:var(--dim); font-size:16px; }
+  ol.steps { padding:0; list-style:none; counter-reset:s; margin:0; }
+  ol.steps > li { counter-increment:s; border-top:1px solid var(--line); padding:26px 0 26px 64px; position:relative; }
+  ol.steps > li::before { content:counter(s, decimal-leading-zero); position:absolute; left:0; top:26px; font:400 15px "IBM Plex Mono", monospace; color:var(--dim); }
+  ol.steps > li.done-able::after { content:""; position:absolute; left:34px; top:31px; width:7px; height:7px; background:var(--yellow); }
+  h3 { font-weight:500; font-size:20px; margin:0 0 8px; }
+  p { margin:8px 0; }
+  .note { border-left:3px solid var(--blue); padding:4px 0 4px 14px; color:var(--dim); font-size:16px; margin:12px 0; }
+  .warn { border-left-color:var(--red); }
+  pre,code { font:400 14px/1.55 "IBM Plex Mono", monospace; }
+  pre { background:rgba(127,127,127,.12); border:1px solid var(--line); padding:14px 16px; overflow-x:auto; margin:10px 0; position:relative; }
+  p code, li code, td code { background:rgba(127,127,127,.16); padding:1px 6px; }
+  button.copy { position:absolute; top:8px; right:8px; font:400 11px "IBM Plex Mono", monospace; background:transparent; color:var(--dim); border:1px solid var(--line); padding:3px 8px; cursor:pointer; letter-spacing:.08em; }
+  button.copy:hover { color:var(--fg); border-color:var(--fg); }
+  .tabs { display:flex; gap:0; margin:14px 0 0; border-bottom:1px solid var(--line); }
+  .tabs button { background:none; border:0; border-bottom:3px solid transparent; color:var(--dim); font:400 13px "IBM Plex Mono", monospace; letter-spacing:.1em; text-transform:uppercase; padding:8px 16px; cursor:pointer; }
+  .tabs button[aria-selected="true"] { color:var(--fg); border-bottom-color:var(--yellow); }
+  .os { display:none; } .os.show { display:block; }
+  .nojs .os { display:block; }
+  .btn { display:inline-block; padding:12px 20px; border:1px solid var(--fg); text-decoration:none; font:500 14px "IBM Plex Sans", sans-serif; letter-spacing:.1em; text-transform:uppercase; margin:6px 10px 6px 0; }
+  .btn.primary { background:var(--fg); color:var(--bg); } .btn:hover { border-color:var(--yellow); } .btn.primary:hover { background:var(--yellow); color:#000; }
+  table { border-collapse:collapse; width:100%; font-size:16px; margin:10px 0; }
+  th,td { text-align:left; padding:9px 12px 9px 0; border-top:1px solid var(--line); vertical-align:top; }
+  th { font:400 12px "IBM Plex Mono", monospace; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
+  details { border-top:1px solid var(--line); padding:12px 0; } details:last-of-type { border-bottom:1px solid var(--line); }
+  summary { cursor:pointer; font-weight:500; }
+  footer { margin-top:70px; color:var(--dim); font-size:14px; }
+  button.theme { background:none; border:1px solid var(--line); color:var(--dim); font:400 12px "IBM Plex Mono", monospace; padding:4px 10px; cursor:pointer; }
+  :focus-visible { outline:2px solid var(--yellow); outline-offset:3px; }
+</style>
+</head>
+<body class="nojs">
+<main>
+  <header class="top">
+    <span><i class="sq r"></i><i class="sq b"></i><i class="sq y"></i></span><span>&gt; install</span>
+    <nav><a href="index.html">home</a><a href="demo.html">demo</a><a href="https://github.com/oliverweissl/RietveldTV">github</a><button class="theme" id="theme" aria-label="Toggle light and dark theme">theme</button></nav>
+  </header>
+
+  <h1>Install RietveldTV.</h1>
+  <p class="lead">Ten minutes, over Wi-Fi, no root. Nothing is deleted: you can switch back to your old home screen at any time.</p>
+  <div class="meta"><span><b>Time</b> ~10 min</span><span><b>Difficulty</b> easy</span><span><b>Cost</b> free</span></div>
+
+  <div class="rule"></div>
+  <p class="kicker">Before you start</p>
+  <h2>Requirements</h2>
+  <p>Tick these off first. If something is missing, the step that fixes it is linked.</p>
+  <ul class="req">
+    <li><strong>An Android TV or Google TV</strong><span>Android 8.0 or newer (check: Settings → Device Preferences → About → Android TV OS version). Sony, Philips, TCL, Xiaomi, Chromecast with Google TV, NVIDIA Shield and most others work. Amazon Fire TV is not supported.</span></li>
+    <li><strong>The TV remote</strong><span>You will use it for a few menu steps and to try the result.</span></li>
+    <li><strong>A computer on the same Wi-Fi or network as the TV</strong><span>Windows, macOS or Linux. A phone is not enough.</span></li>
+    <li><strong>ADB on the computer</strong><span>A small free tool from Google that talks to the TV. <a href="#s4">Step 4</a> shows how to get it.</span></li>
+    <li><strong>The TV's IP address</strong><span>Something like <code>192.168.1.50</code>. <a href="#s3">Step 3</a> shows where to find it.</span></li>
+    <li><strong>The RietveldTV app file (APK)</strong><span><a href="#s5">Step 5</a>.</span></li>
+  </ul>
+  <div class="note">Your apps, accounts and settings stay as they are. RietveldTV only shows the apps you pick, so the TV's own recommendations and ads are no longer on the home screen. The TV itself is not modified beyond making this the default Home screen.</div>
+
+  <div class="rule"></div>
+  <p class="kicker">Step by step</p>
+  <h2>Install</h2>
+  <ol class="steps">
+    <li class="done-able" id="s1">
+      <h3>Turn on Developer options on the TV</h3>
+      <p>On the TV: <strong>Settings → Device Preferences → About</strong>, scroll to <strong>Build</strong> (or "Android TV OS build") and press OK on it <strong>7 times</strong>. A message says "You are now a developer".</p>
+      <div class="note">The menu names differ a little between brands. On Google TV it is Settings → System → About. Look for the word <em>Build</em>.</div>
+    </li>
+    <li class="done-able" id="s2">
+      <h3>Turn on debugging over the network</h3>
+      <p>Go back one level: <strong>Settings → Device Preferences → Developer options</strong>. Switch on <strong>USB debugging</strong> and, if you see it, <strong>Network debugging</strong> or <strong>Wireless debugging</strong>.</p>
+      <div class="note">If your TV shows <strong>Wireless debugging</strong> with a "Pair device with pairing code" button, note both the IP address <em>and the port</em> it shows (for example <code>192.168.1.50:37215</code>). You will use <code>ip:port</code> instead of just the IP below. Details in <a href="#help">Troubleshooting</a>.</div>
+    </li>
+    <li class="done-able" id="s3">
+      <h3>Find the TV's IP address</h3>
+      <p>On the TV: <strong>Settings → Network &amp; Internet</strong>, open your Wi-Fi network and look for <strong>IP address</strong>. Or look at the device list in your router's web page. Write it down.</p>
+    </li>
+    <li class="done-able" id="s4">
+      <h3>Install ADB on your computer</h3>
+      <div class="tabs" role="tablist" aria-label="Operating system">
+        <button role="tab" aria-selected="true" data-os="linux">Linux</button>
+        <button role="tab" aria-selected="false" data-os="mac">macOS</button>
+        <button role="tab" aria-selected="false" data-os="win">Windows</button>
+      </div>
+      <div class="os" data-os="linux">
+        <p>Ubuntu / Debian:</p>
+<pre>sudo apt install android-tools-adb</pre>
+        <p>Fedora: <code>sudo dnf install android-tools</code>. Arch: <code>sudo pacman -S android-tools</code>.</p>
+      </div>
+      <div class="os" data-os="mac">
+        <p>With <a href="https://brew.sh">Homebrew</a>:</p>
+<pre>brew install android-platform-tools</pre>
+      </div>
+      <div class="os" data-os="win">
+        <p>Download <a href="https://developer.android.com/tools/releases/platform-tools">SDK Platform-Tools for Windows</a> (a zip file), unzip it, for example to <code>C:\platform-tools</code>. Then open that folder, click in the address bar, type <code>powershell</code> and press Enter. Use <code>.\adb.exe</code> wherever this page says <code>adb</code>.</p>
+      </div>
+      <p>Check that it works: <code>adb version</code> should print a version number.</p>
+    </li>
+    <li class="done-able" id="s5">
+      <h3>Download RietveldTV</h3>
+      <p><a class="btn primary" href="https://github.com/oliverweissl/RietveldTV/releases/latest">Download RietveldTV.apk</a><a class="btn" href="https://github.com/oliverweissl/RietveldTV/archive/refs/heads/main.zip">Download scripts (zip)</a></p>
+      <p>Save the APK in a folder you can find again, for example your Downloads folder.</p>
+      <div class="note">No download on the Releases page yet? Build it yourself: install JDK 17 and the Android SDK, then run <code>./gradlew assembleDebug</code>. The file ends up in <code>app/build/outputs/apk/debug/app-debug.apk</code>. See the <a href="https://github.com/oliverweissl/RietveldTV#build">README</a>.</div>
+    </li>
+    <li class="done-able" id="s6">
+      <h3>Connect to the TV and install</h3>
+      <p>Open a terminal in the folder with the APK. Replace <code>192.168.1.50</code> with your TV's IP (add <code>:port</code> if your TV showed one).</p>
+      <p><strong>Connect:</strong></p>
+<pre>adb connect 192.168.1.50:5555</pre>
+      <p>Now <strong>look at the TV</strong>: it asks "Allow USB debugging?". Tick <em>Always allow from this computer</em> and choose <strong>OK</strong>. Then check:</p>
+<pre>adb devices</pre>
+      <p>Your TV should be listed as <code>device</code> (not <code>unauthorized</code> or <code>offline</code>).</p>
+      <p><strong>Install the app and make it the home screen:</strong></p>
+<pre>adb install -r RietveldTV.apk
+adb shell cmd package set-home-activity --user 0 dev.oliver.home/.HomeActivity
+adb shell input keyevent KEYCODE_HOME</pre>
+      <p>On macOS or Linux you can do the same in one go with the script from the zip:</p>
+<pre>scripts/install.sh 192.168.1.50 RietveldTV.apk</pre>
+    </li>
+    <li class="done-able" id="s7">
+      <h3>Press Home on the remote</h3>
+      <p>You should see the black screen with the spotlight. Use the arrow keys to move between apps and OK to open one. To add widgets (clock, time zones, weather), focus the <strong>+ Widgets</strong> tile and press OK.</p>
+      <div class="note warn">If Home still opens the old launcher, go to <a href="#help">Troubleshooting</a>. It is a known quirk on some TVs, and it has a fix.</div>
+    </li>
+  </ol>
+
+  <div class="rule" id="help"></div>
+  <p class="kicker">When something does not work</p>
+  <h2>Troubleshooting</h2>
+  <details><summary><code>adb connect</code> says "failed to connect" or "connection refused"</summary>
+    <p>Check that the TV and the computer are on the same network (not a guest network), that debugging is on in <a href="#s2">step 2</a>, and that the IP address is right. Some TVs switch debugging off after a restart: turn it on again. Newer TVs with <em>Wireless debugging</em> need pairing first: tap "Pair device with pairing code", then run <code>adb pair IP:PAIRING-PORT</code> and enter the code, then <code>adb connect IP:PORT</code> using the port shown on the main Wireless debugging screen.</p></details>
+  <details><summary><code>adb devices</code> shows "unauthorized"</summary>
+    <p>The TV is waiting for you to accept the prompt. Look at the screen and choose OK. If no prompt appears: in Developer options use "Revoke USB debugging authorizations", then <code>adb kill-server</code> and connect again.</p></details>
+  <details><summary>Home still opens the old launcher</summary>
+    <p>Some TVs rank their own launcher or setup wizard higher. First pin ours (step 6 already did). If it still opens the old one, find what competes:</p>
+<pre>adb shell pm query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME</pre>
+    <p>and disable the package that is not <code>dev.oliver.home</code> (this is reversible):</p>
+<pre>adb shell pm disable-user --user 0 PACKAGE.NAME</pre>
+    <p>Only do this for packages you recognise as launchers. On a Xiaomi TV this was needed for <code>com.google.android.apps.tv.launcherx</code>, <code>com.mitv.tvhome.atv</code> and the setup wizard <code>com.google.android.tungsten.setupwraith</code>. Disabling system packages can switch debugging off, so re-enable it afterwards.</p></details>
+  <details><summary>Some of my apps are missing</summary>
+    <p>RietveldTV shows only the apps in its list. Edit the list on the TV (<strong>+ Widgets</strong> is for widgets; apps are in <code>config.json</code>, see the <a href="https://github.com/oliverweissl/RietveldTV#configure">README</a>) and use the app's package name. Find it with <code>adb shell pm list packages | grep -i name</code>.</p></details>
+  <details><summary>I want my old home screen back</summary>
+    <p>On macOS / Linux: <code>scripts/restore.sh 192.168.1.50</code>. By hand:</p>
+<pre>adb shell pm enable com.google.android.apps.tv.launcherx
+adb uninstall dev.oliver.home</pre>
+    <p>Re-enable anything else you disabled with <code>adb shell pm enable PACKAGE.NAME</code>.</p></details>
+
+  <div class="rule"></div>
+  <p class="kicker">Next</p>
+  <h2>Make it yours</h2>
+  <p><a class="btn" href="demo.html">Try the demo</a><a class="btn" href="https://github.com/oliverweissl/RietveldTV#configure">Configure apps and widgets</a><a class="btn" href="CUSTOMIZE-WITH-CLAUDE.md">Customise with Claude</a></p>
+
+  <footer>
+    <p>RietveldTV is free software (MIT). It is not affiliated with Google, Xiaomi, Apple, Netflix, Spotify or YouTube. You use it at your own risk; everything on this page is reversible.</p>
+    <p><a href="index.html">Project page</a> · <a href="https://github.com/oliverweissl/RietveldTV">GitHub</a></p>
+  </footer>
+</main>
+<script>
+  document.body.classList.remove('nojs');
+  // OS tabs: pick the visitor's OS by default
+  var ua = navigator.userAgent || '';
+  var guess = /Win/i.test(ua) ? 'win' : /Mac/i.test(ua) ? 'mac' : 'linux';
+  function pick(os) {
+    document.querySelectorAll('.tabs button').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.os === os)); });
+    document.querySelectorAll('.os').forEach(function (d) { d.classList.toggle('show', d.dataset.os === os); });
+  }
+  document.querySelectorAll('.tabs button').forEach(function (b) { b.addEventListener('click', function () { pick(b.dataset.os); }); });
+  pick(guess);
+  // copy buttons
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var b = document.createElement('button');
+    b.className = 'copy'; b.textContent = 'copy'; b.type = 'button';
+    b.addEventListener('click', function () {
+      var text = pre.innerText.replace(/\ncopy$/, '').replace(/^copy\n?/, '');
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+        b.textContent = 'copied'; setTimeout(function () { b.textContent = 'copy'; }, 1500);
+      }, function () {});
+    });
+    pre.appendChild(b);
+  });
+  // theme toggle
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('theme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  document.getElementById('theme').addEventListener('click', function () {
+    var dark = getComputedStyle(root).getPropertyValue('--bg').trim() === '#000';
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+  });
+</script>
+</body>
+</html>

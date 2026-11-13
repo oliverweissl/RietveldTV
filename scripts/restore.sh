@@ -3,7 +3,7 @@
 # Usage: scripts/restore.sh <tv-ip> [package ...]    (extra packages are re-enabled too)
 set -euo pipefail
 TV="${1:?usage: scripts/restore.sh <tv-ip> [package ...]}"; shift || true
-DEV="$TV:5555"
+case "$TV" in *:*) DEV="$TV" ;; *) DEV="$TV:5555" ;; esac   # accepts "ip" or "ip:port"
 adb connect "$DEV"
 for p in com.google.android.apps.tv.launcherx com.mitv.tvhome.atv com.google.android.tungsten.setupwraith "$@"; do
   adb -s "$DEV" shell pm enable "$p" 2>/dev/null && echo "enabled $p" || true
