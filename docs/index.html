@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RietveldTV</title>
-<meta name="description" content="A minimal, ad-free home screen for Android TV: black room, one spotlight, glass app icons, quiet widgets.">
+<meta name="description" content="A minimal, ad-free home screen for Android TV: black room, one spotlight, flat rectangular app icons, quiet widgets.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300;400;500&display=swap">
 <style>
@@ -65,14 +65,14 @@
   </header>
 
   <h1>A quiet home screen for your TV.</h1>
-  <p class="lead">Black room, one spotlight, glass app icons. No ads, no recommendations, no tracking.</p>
+  <p class="lead">Black room, one spotlight, flat app icons. No ads, no recommendations, no tracking.</p>
   <div class="cta">
     <a class="btn primary" href="https://github.com/oliverweissl/RietveldTV/releases/latest">Download APK</a>
     <a class="btn" href="#install">Install guide</a>
     <a class="btn" href="CUSTOMIZE-WITH-CLAUDE.md">Customise with Claude</a>
   </div>
   <figure>
-    <img src="screenshot-widgets.png" alt="RietveldTV home screen: a spotlight on a glass Apple TV icon, with weather, a second time zone and a clock across the top">
+    <img src="screenshot-widgets.png" alt="RietveldTV home screen: a spotlight on a flat Apple TV icon, with weather, a second time zone and a clock across the top">
     <figcaption>Apple TV in the spotlight. Widgets: weather (top left), a second time zone (top centre), local clock (top right).</figcaption>
   </figure>
 
@@ -81,7 +81,7 @@
   <h2>Less than a launcher usually does.</h2>
   <ul class="feat">
     <li><strong>Only your apps</strong>You pick the list. No sponsored rows, no content feed.</li>
-    <li><strong>Glass icons, one spotlight</strong>The focused app is lit, the others sink into the dark.</li>
+    <li><strong>Flat icons, one spotlight</strong>The focused app is lit and gets a yellow tab, the others sink into the dark.</li>
     <li><strong>Quiet widgets</strong>Clock, extra time zones, weather with a short forecast.</li>
     <li><strong>One JSON file</strong>Apps and widgets are configured in <code>config.json</code>.</li>
     <li><strong>Private by default</strong>No network access unless you add a weather widget. No SDKs.</li>
@@ -135,7 +135,7 @@ claude</pre>
   <div class="prompt">Add clocks for New York and Sydney next to the main clock.</div>
   <div class="prompt">Add a weather widget for Munich in °C with a 4-day forecast at the top left, and move the Tokyo clock to the top centre.</div>
   <p><strong>Change how it looks</strong> (a few lines of Java):</p>
-  <div class="prompt">Make the icons wider and less rounded, and the glass clearer. Build, install on my TV, take a screenshot and look at it before telling me it is done.</div>
+  <div class="prompt">Make the icons wider and add a thin white outline to the lit one. Build, install on my TV, take a screenshot and look at it before telling me it is done.</div>
   <div class="prompt">Make the spotlight beam narrower and slightly warmer. Check the first, a middle and the last app.</div>
   <div class="prompt">Use Inter instead of IBM Plex (download the OFL fonts) and replace the yellow accents with orange.</div>
   <p><strong>Add a widget:</strong></p>

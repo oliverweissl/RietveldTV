@@ -1,12 +1,12 @@
 # RietveldTV
 
 A minimal, ad-free home screen for Android TV / Google TV.
-Black room, one spotlight, glass app icons, a few quiet widgets. Inspired by Gerrit Rietveld's *Red and Blue Chair* and modernist web design.
+Black room, one spotlight, flat rectangular app icons, a few quiet widgets. Inspired by Gerrit Rietveld's *Red and Blue Chair* and modernist web design.
 
 ![RietveldTV home screen](docs/screenshot-widgets.png)
 
 - **No ads, no recommendations, no accounts, no tracking.** It only shows the apps you list.
-- **Glass icons under a spotlight.** The focused app is lit, the rest sink into the dark, with a soft reflection on the floor.
+- **Flat icons under a spotlight.** Hard-edged rectangles in each app's own colours. The focused app is lit and gets a small yellow end-cut tab, like the painted ends of the Red and Blue Chair; the rest sink into the dark.
 - **Widgets:** local clock and date, extra clocks in other time zones, and weather with a short forecast.
 - **Configured with one JSON file.** Edit it by hand or [let Claude do it](docs/CUSTOMIZE-WITH-CLAUDE.md).
 - **No network access unless you add a weather widget.** No analytics, no third-party SDKs.

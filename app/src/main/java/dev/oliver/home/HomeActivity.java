@@ -285,7 +285,7 @@ public class HomeActivity extends Activity {
                     indicator.getChildAt(k).setBackgroundColor(k == idx ? Color.rgb(205, 30, 38)
                             : (config.showSettings && k == n - 1) ? Color.rgb(30, 70, 200) : 0x40F2F0F0);
                 }
-                if (label.getText().length() == 0 && f instanceof GlassBox) label.setText(((GlassBox) f).title.toUpperCase(Locale.getDefault()));
+                if (label.getText().length() == 0 && f instanceof IconTile) label.setText(((IconTile) f).title.toUpperCase(Locale.getDefault()));
             }
         });
         typeLine("> " + found.size() + " apps ready");
@@ -315,13 +315,13 @@ public class HomeActivity extends Activity {
             d = Math.max(-1.6f, Math.min(1.6f, d));
             float a = Math.abs(d);
             c.setPivotX(c.getWidth() / 2f);
-            c.setPivotY(((GlassBox) c).frontBottom());
+            c.setPivotY(((IconTile) c).frontBottom());
             float sc = 1.10f - 0.22f * Math.min(a, 1.4f);
             c.setScaleX(sc);
             c.setScaleY(sc);
             c.setAlpha(Math.max(0.45f, 1f - 0.4f * a));
-            ((GlassBox) c).setState(Math.max(0f, 1f - a * 1.6f), Math.max(-1f, Math.min(1f, d)));
-            if (i == 0) scene.setFloor(sw / 2f, scroller.getTop() + c.getTop() + ((GlassBox) c).frontBottom());
+            ((IconTile) c).setState(Math.max(0f, 1f - a * 1.6f), Math.max(-1f, Math.min(1f, d)));
+            if (i == 0) scene.setFloor(sw / 2f, scroller.getTop() + c.getTop() + ((IconTile) c).frontBottom());
         }
     }
 
@@ -348,7 +348,7 @@ public class HomeActivity extends Activity {
     }
 
     private View tile(Drawable icon, boolean isBanner, final String name, final Runnable action) {
-        final GlassBox g = new GlassBox(this, icon, isBanner);
+        final IconTile g = new IconTile(this, icon, isBanner);
         g.title = name;
         g.setFocusable(true);
         g.setClickable(true);
@@ -431,20 +431,19 @@ public class HomeActivity extends Activity {
     }
 
     /**
-     * One app as a single Liquid-Glass style icon, built the way the usual shader recipes do it:
-     * the icon is a rounded-rectangle distance field; near the rim the picture is bent along the surface
-     * normal (refraction, with a slight R/G/B split), and the rim catches light from the slope of the bevel
-     * (specular + fresnel). Everything is computed once per icon into two bitmaps.
+     * One app as a flat, hard-edged rectangle in the De Stijl / Rietveld spirit: the app's own artwork fills a plane,
+     * nothing is glossed or refracted. The lamp does the work: lit tiles show their colour, the rest sink into the dark,
+     * and the focused tile gets a small yellow end-cut tab like the painted ends of the Red and Blue Chair.
      */
-    private class GlassBox extends View {
+    private class IconTile extends View {
         private final Drawable art;
         private final int fw = px(166), fh = px(97), depth = px(28), side = px(8), refl = px(32);
         String title = "";
-        private float lit = 0f, dir = 0f;
-        private Bitmap refr, spec;
+        private float lit = 0f;
+        private Bitmap content;
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
-        GlassBox(android.content.Context c, Drawable art, boolean banner) {
+        IconTile(android.content.Context c, Drawable art, boolean banner) {
             super(c);
             this.art = art;
         }
@@ -454,22 +453,16 @@ public class HomeActivity extends Activity {
         float frontBottom() { return depth + fh; }
 
         void setState(float lit, float dir) {
-            if (Math.abs(this.lit - lit) > 0.01f || Math.abs(this.dir - dir) > 0.01f) {
-                this.lit = lit; this.dir = dir; invalidate();
-            }
+            if (Math.abs(this.lit - lit) > 0.01f) { this.lit = lit; invalidate(); }
         }
 
-        private int k(float a) { return Color.argb(Math.max(0, Math.min(255, Math.round(a))), 0, 0, 0); }
-        private int w(float a) { return Color.argb(Math.max(0, Math.min(255, Math.round(a))), 255, 255, 255); }
-
-        /** The flat artwork the glass sits on: dark base, app icon filling the rectangle, glyph floating on a soft shadow. */
+        /** The flat artwork: a solid plane, the app icon filling the rectangle. */
         private Bitmap renderContent() {
             Bitmap b = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(b);
             RectF r = new RectF(0, 0, fw, fh);
-            p.setShader(new android.graphics.LinearGradient(0, 0, 0, fh, Color.rgb(46, 48, 52), Color.rgb(16, 17, 19), Shader.TileMode.CLAMP));
+            p.setColor(Color.rgb(24, 25, 27));
             c.drawRect(r, p);
-            p.setShader(null);
             if (art instanceof android.graphics.drawable.AdaptiveIconDrawable) {
                 android.graphics.drawable.AdaptiveIconDrawable ad = (android.graphics.drawable.AdaptiveIconDrawable) art;
                 Drawable bg = ad.getBackground(), fg = ad.getForeground();
@@ -479,14 +472,8 @@ public class HomeActivity extends Activity {
                     bg.setAlpha(255); bg.draw(c);
                 }
                 float gs = fh * 1.5f;
-                android.graphics.Rect gb = new android.graphics.Rect((int) (r.centerX() - gs / 2), (int) (r.centerY() - gs / 2),
-                        (int) (r.centerX() + gs / 2), (int) (r.centerY() + gs / 2));
                 if (fg != null) {
-                    fg.setBounds(gb.left, gb.top + px(3), gb.right, gb.bottom + px(3));
-                    fg.setColorFilter(k(90), android.graphics.PorterDuff.Mode.SRC_IN);
-                    fg.draw(c);
-                    fg.clearColorFilter();
-                    fg.setBounds(gb);
+                    fg.setBounds((int) (r.centerX() - gs / 2), (int) (r.centerY() - gs / 2), (int) (r.centerX() + gs / 2), (int) (r.centerY() + gs / 2));
                     fg.draw(c);
                 }
             } else if (art != null) {
@@ -504,121 +491,21 @@ public class HomeActivity extends Activity {
             return b;
         }
 
-        private float chan(int[] a, float x, float y, int shift) {
-            x = Math.max(0f, Math.min(fw - 1.001f, x));
-            y = Math.max(0f, Math.min(fh - 1.001f, y));
-            int x0 = (int) x, y0 = (int) y;
-            float fx = x - x0, fy = y - y0;
-            float v00 = (a[y0 * fw + x0] >> shift) & 255, v10 = (a[y0 * fw + x0 + 1] >> shift) & 255;
-            float v01 = (a[(y0 + 1) * fw + x0] >> shift) & 255, v11 = (a[(y0 + 1) * fw + x0 + 1] >> shift) & 255;
-            return (v00 * (1 - fx) + v10 * fx) * (1 - fy) + (v01 * (1 - fx) + v11 * fx) * fy;
-        }
-
-        private void build() {
-            Bitmap content = renderContent();
-            int[] src = new int[fw * fh];
-            content.getPixels(src, 0, fw, 0, 0, fw, fh);
-            int[] out = new int[fw * fh], hl = new int[fw * fh];
-            float rad = fh * 0.22f, bw = fh * 0.10f;
-            float cx = fw / 2f, cy = fh / 2f, hx = fw / 2f - rad, hy = fh / 2f - rad;
-            float lx = -0.35f, ly = -0.94f;                       // light from the top, a touch from the left
-            for (int y = 0; y < fh; y++) {
-                for (int x = 0; x < fw; x++) {
-                    float px_ = x + 0.5f - cx, py_ = y + 0.5f - cy;
-                    float qx = Math.abs(px_) - hx, qy = Math.abs(py_) - hy;
-                    float ox = Math.max(qx, 0f), oy = Math.max(qy, 0f);
-                    float len = (float) Math.sqrt(ox * ox + oy * oy);
-                    float sdf = len + Math.min(Math.max(qx, qy), 0f) - rad;      // < 0 inside
-                    float dIn = -sdf;
-                    float cover = Math.max(0f, Math.min(1f, dIn + 0.5f));       // anti-aliased silhouette
-                    if (cover <= 0f) continue;
-                    // outward normal = gradient of the distance field
-                    float nx, ny;
-                    if (len > 1e-4f) { nx = ox / len * Math.signum(px_); ny = oy / len * Math.signum(py_); }
-                    else if (qx > qy) { nx = Math.signum(px_); ny = 0f; }
-                    else { nx = 0f; ny = Math.signum(py_); }
-                    float t = Math.max(0f, Math.min(1f, 1f - dIn / bw));        // 0 in the flat middle, 1 on the rim
-                    float shift = bw * 0.28f * t * t;                        // refraction: strongest at the rim
-                    float rr = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 16);
-                    float gg = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 8);
-                    float bb = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 0);
-                    out[y * fw + x] = Color.argb(Math.round(255 * cover), (int) rr, (int) gg, (int) bb);
-                    // light on the bevel: main highlight facing the lamp, a weaker bounce on the opposite side, hairline fresnel rim
-                    float nl = nx * lx + ny * ly;
-                    float s1 = (float) Math.pow(Math.max(0f, nl), 3.0) * (float) Math.pow(t, 2.0) * 0.85f;
-                    float s2 = (float) Math.pow(Math.max(0f, -nl), 4.0) * (float) Math.pow(t, 2.0) * 0.22f;
-                    float fres = (float) Math.pow(t, 6) * 0.20f;
-                    float a = Math.min(1f, s1 + s2 + fres) * cover;
-                    hl[y * fw + x] = Color.argb(Math.round(255 * a), 255, 255, 255);
-                }
-            }
-            refr = Bitmap.createBitmap(out, fw, fh, Bitmap.Config.ARGB_8888);
-            spec = Bitmap.createBitmap(hl, fw, fh, Bitmap.Config.ARGB_8888);
-        }
-
         @Override protected void onDraw(Canvas c) {
-            if (refr == null) build();
-            int W = getWidth();
-            float x0 = (W - fw) / 2f, y0 = depth, x1 = x0 + fw, y1 = depth + fh;
+            if (content == null) content = renderContent();
+            float x0 = (getWidth() - fw) / 2f, y0 = depth, y1 = depth + fh;
             float L = lit;
 
-            // soft contact shadow
-            c.save();
-            c.translate(W / 2f, y1);
-            c.scale(1f, 0.08f);
+            // the plane
             p.setColor(Color.WHITE);
-            p.setShader(new RadialGradient(0, 0, fw * 0.55f, 0xC0000000, 0x00000000, Shader.TileMode.CLAMP));
-            c.drawCircle(0, 0, fw * 0.55f, p);
-            c.restore();
             p.setShader(null);
-
-            // faint reflection in the black floor
-            int layer = c.saveLayer(0, y1, W, getHeight(), null);
-            c.save();
-            c.scale(1f, -1f, W / 2f, y1);
-            drawIcon(c, x0, y0, 0.06f + 0.26f * L);
-            c.restore();
-            p.setColor(Color.WHITE);
-            p.setShader(new android.graphics.LinearGradient(0, y1, 0, y1 + refl * 0.7f, 0x40000000, 0x00000000, Shader.TileMode.CLAMP));
-            p.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN));
-            c.drawRect(0, y1, W, getHeight(), p);
-            p.setXfermode(null);
-            p.setShader(null);
-            c.restoreToCount(layer);
-
-            drawIcon(c, x0, y0, 1f);
-        }
-
-        private void drawIcon(Canvas c, float x0, float y0, float st) {
-            float L = lit;
-            float rad = fh * 0.22f;
-            RectF r = new RectF(x0, y0, x0 + fw, y0 + fh);
-            Path shape = new Path();
-            shape.addRoundRect(r, rad, rad, Path.Direction.CW);
-
-            // refracted artwork
-            p.setColor(Color.WHITE);
-            p.setAlpha((int) (255 * st));
-            c.drawBitmap(refr, x0, y0, p);
-            p.setAlpha(255);
-
-            int save = c.save();
-            c.clipPath(shape);
-            // outside the beam the icon sinks into the dark
-            p.setColor(k((1f - L) * 150 * st));
-            c.drawRect(r, p);
-            // gentle top light on the surface
-            p.setColor(Color.WHITE);
-            p.setShader(new android.graphics.LinearGradient(0, y0, 0, y0 + fh * 0.55f, w((8 + L * 40) * st), w(0), Shader.TileMode.CLAMP));
-            c.drawRect(r, p);
-            p.setShader(null);
-            c.restoreToCount(save);
-
-            // rim highlights from the bevel slope, brighter when the lamp is on it
-            p.setColor(Color.WHITE);
-            p.setAlpha((int) (255 * (0.35f + 0.65f * L) * st));
-            c.drawBitmap(spec, x0, y0, p);
-            p.setAlpha(255);
+            c.drawBitmap(content, x0, y0, p);
+            // outside the beam the plane sinks into the dark
+            p.setColor(Color.argb(Math.round((1f - L) * 150), 0, 0, 0));
+            c.drawRect(x0, y0, x0 + fw, y1, p);
+            // the yellow end-cut tab, only on the lit tile
+            p.setColor(Color.argb(Math.round(255 * L), 248, 200, 40));
+            c.drawRect(x0, y1 + px(5), x0 + px(30), y1 + px(9), p);
         }
     }
 

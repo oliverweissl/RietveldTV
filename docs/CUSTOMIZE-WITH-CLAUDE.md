@@ -37,8 +37,8 @@ All drawing is in `app/src/main/java/dev/oliver/home/HomeActivity.java`. These a
 
 | What | Where | Example prompt |
 | --- | --- | --- |
-| Icon shape and size | `GlassBox` (`fw`, `fh`, corner `rad`) | "Make the icons 10% bigger and less rounded." |
-| Glass look | `GlassBox.build` (`bw` bevel width, `shift` refraction, `s1`/`s2`/`fres` rim light) | "Make the glass edge more visible." or "Even subtler." |
+| Icon shape and size | `IconTile` (`fw`, `fh`) | "Make the icons 10% bigger." |
+| Icon look | `IconTile.onDraw` (dimming outside the beam, the yellow end-cut tab) | "Make the unlit icons brighter." or "Replace the yellow tab with a red one." |
 | Spotlight | `SceneView.build` (`topHalf`, `botHalf`, intensity `0.15f`, pool `0.36f`) | "Make the beam narrower and warmer." |
 | Spacing and zoom | `dial()` and `tile()` margins | "Space the apps further apart, shrink the neighbours more." |
 | Colours | `Color.rgb(...)` accents: red `205,30,38`, blue `30,70,200`, yellow `248,200,40` | "Replace the yellow accents with orange." |
