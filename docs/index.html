@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RietveldTV</title>
+<meta name="description" content="A minimal, ad-free home screen for Android TV: black room, one spotlight, glass app icons, quiet widgets.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@300;400;500&display=swap">
+<style>
+  :root {
+    --bg: #000; --fg: #f2f0f0; --dim: rgba(242,240,240,.62); --line: rgba(242,240,240,.2);
+    --red: #cd1e26; --blue: #1e46c8; --yellow: #f8c828;
+  }
+  :root[data-theme="light"] { --bg: #f2f0f0; --fg: #111; --dim: rgba(17,17,17,.62); --line: rgba(17,17,17,.2); }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg: #f2f0f0; --fg: #111; --dim: rgba(17,17,17,.62); --line: rgba(17,17,17,.2); } }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 300 18px/1.6 "IBM Plex Sans", system-ui, sans-serif; }
+  a { color: var(--fg); text-underline-offset: 3px; }
+  main { max-width: 920px; margin: 0 auto; padding: 0 20px 80px; }
+  header.top { display: flex; align-items: center; gap: 14px; padding: 28px 0 0; font: 400 13px "IBM Plex Mono", monospace; letter-spacing: .08em; color: var(--dim); }
+  .sq { display: inline-block; width: 10px; height: 10px; margin-right: 4px; }
+  .sq.r { background: var(--red); } .sq.b { background: var(--blue); } .sq.y { background: var(--yellow); }
+  nav { margin-left: auto; display: flex; gap: 18px; }
+  nav a { color: var(--dim); text-decoration: none; } nav a:hover { color: var(--fg); }
+  h1 { font-weight: 300; font-size: clamp(44px, 9vw, 88px); line-height: 1.02; margin: 56px 0 18px; letter-spacing: -.01em; }
+  .lead { font-size: clamp(18px, 2.6vw, 22px); color: var(--dim); max-width: 34ch; margin: 0 0 30px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 40px; }
+  .btn { display: inline-block; padding: 12px 20px; border: 1px solid var(--fg); text-decoration: none; font: 500 14px "IBM Plex Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+  .btn.primary { background: var(--fg); color: var(--bg); }
+  .btn:hover { border-color: var(--yellow); } .btn.primary:hover { background: var(--yellow); color: #000; }
+  figure { margin: 0; } figure img { width: 100%; height: auto; display: block; border: 1px solid var(--line); }
+  figcaption { font: 400 12px "IBM Plex Mono", monospace; color: var(--dim); letter-spacing: .06em; margin-top: 8px; }
+  .rule { position: relative; height: 1px; background: var(--line); margin: 72px 0 36px; }
+  .rule::before, .rule::after { content: ""; position: absolute; top: -2px; width: 22px; height: 5px; background: var(--yellow); }
+  .rule::before { left: 0; } .rule::after { right: 0; }
+  h2 { font-weight: 300; font-size: 34px; margin: 0 0 6px; }
+  .kicker { font: 400 12px "IBM Plex Mono", monospace; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; margin: 0 0 8px; }
+  ul.feat { list-style: none; padding: 0; margin: 24px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px 28px; }
+  ul.feat li { border-top: 1px solid var(--line); padding-top: 12px; color: var(--dim); }
+  ul.feat strong { display: block; color: var(--fg); font-weight: 500; }
+  ol.steps { padding-left: 0; list-style: none; counter-reset: s; margin: 24px 0 0; }
+  ol.steps > li { counter-increment: s; border-top: 1px solid var(--line); padding: 16px 0 16px 56px; position: relative; }
+  ol.steps > li::before { content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 16px; font: 400 14px "IBM Plex Mono", monospace; color: var(--dim); }
+  pre, code { font: 400 14px/1.5 "IBM Plex Mono", monospace; }
+  pre { background: rgba(127,127,127,.12); border: 1px solid var(--line); padding: 14px 16px; overflow-x: auto; margin: 10px 0; position: relative; }
+  p code, li code { background: rgba(127,127,127,.16); padding: 1px 6px; }
+  button.copy { position: absolute; top: 8px; right: 8px; font: 400 11px "IBM Plex Mono", monospace; background: transparent; color: var(--dim); border: 1px solid var(--line); padding: 3px 8px; cursor: pointer; letter-spacing: .08em; }
+  button.copy:hover { color: var(--fg); border-color: var(--fg); }
+  .prompt { border-left: 3px solid var(--blue); padding: 6px 0 6px 16px; margin: 14px 0; color: var(--fg); }
+  table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 15px; }
+  th, td { text-align: left; padding: 9px 10px 9px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  th { font: 400 12px "IBM Plex Mono", monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+  footer { margin-top: 80px; color: var(--dim); font-size: 14px; }
+  button.theme { background: none; border: 1px solid var(--line); color: var(--dim); font: 400 12px "IBM Plex Mono", monospace; padding: 4px 10px; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <span><i class="sq r"></i><i class="sq b"></i><i class="sq y"></i></span><span>&gt; rietveldtv</span>
+    <nav><a href="#install">install</a><a href="#configure">configure</a><a href="#claude">customise with claude</a><a href="https://github.com/oliverweissl/RietveldTV">github</a><button class="theme" id="theme" aria-label="Toggle light and dark theme">theme</button></nav>
+  </header>
+
+  <h1>A quiet home screen for your TV.</h1>
+  <p class="lead">Black room, one spotlight, glass app icons. No ads, no recommendations, no tracking.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/oliverweissl/RietveldTV/releases/latest">Download APK</a>
+    <a class="btn" href="#install">Install guide</a>
+    <a class="btn" href="CUSTOMIZE-WITH-CLAUDE.md">Customise with Claude</a>
+  </div>
+  <figure>
+    <img src="screenshot-widgets.png" alt="RietveldTV home screen: a spotlight on a glass Netflix icon, with weather and clock widgets top right">
+    <figcaption>Netflix in the spotlight. Widgets: weather, a second time zone, local clock.</figcaption>
+  </figure>
+
+  <div class="rule"></div>
+  <p class="kicker">What it is</p>
+  <h2>Less than a launcher usually does.</h2>
+  <ul class="feat">
+    <li><strong>Only your apps</strong>You pick the list. No sponsored rows, no content feed.</li>
+    <li><strong>Glass icons, one spotlight</strong>The focused app is lit, the others sink into the dark.</li>
+    <li><strong>Quiet widgets</strong>Clock, extra time zones, weather with a short forecast.</li>
+    <li><strong>One JSON file</strong>Apps and widgets are configured in <code>config.json</code>.</li>
+    <li><strong>Private by default</strong>No network access unless you add a weather widget. No SDKs.</li>
+    <li><strong>Small and hackable</strong>Plain Android Views, no dependencies. Easy for Claude to change.</li>
+  </ul>
+
+  <div class="rule" id="install"></div>
+  <p class="kicker">Install</p>
+  <h2>Five minutes, over Wi-Fi.</h2>
+  <ol class="steps">
+    <li><strong>Enable debugging on the TV.</strong> Settings → Device Preferences → About → tap <em>Build</em> seven times. Then Developer options → <em>USB debugging</em> on.</li>
+    <li><strong>Find the TV's IP</strong> in Settings → Network or your router's device list. Install <code>adb</code> on your computer (<code>sudo apt install android-tools-adb</code>, or <a href="https://developer.android.com/tools/releases/platform-tools">platform-tools</a>).</li>
+    <li><strong>Download the APK</strong> from the <a href="https://github.com/oliverweissl/RietveldTV/releases/latest">latest release</a> and clone the repo for the scripts:
+<pre>git clone https://github.com/oliverweissl/RietveldTV.git &amp;&amp; cd RietveldTV</pre></li>
+    <li><strong>Install and make it the home screen:</strong>
+<pre>scripts/install.sh 192.168.1.50 RietveldTV.apk</pre>
+      Accept "Allow debugging?" on the TV, then press Home on the remote.</li>
+    <li><strong>Home still opens the old launcher?</strong> See <a href="https://github.com/oliverweissl/RietveldTV#troubleshooting">troubleshooting</a>. <code>scripts/restore.sh &lt;tv-ip&gt;</code> undoes everything.</li>
+  </ol>
+
+  <div class="rule" id="configure"></div>
+  <p class="kicker">Configure</p>
+  <h2>Apps and widgets in one file.</h2>
+<pre>{
+  "apps": ["com.netflix.ninja", "com.google.android.youtube.tv", "com.spotify.tv.android"],
+  "showSettings": true,
+  "widgets": [
+    { "type": "weather", "name": "Berlin", "latitude": 52.52, "longitude": 13.41, "units": "celsius", "days": 3 },
+    { "type": "clock", "label": "Tokyo", "timezone": "Asia/Tokyo" },
+    { "type": "clock" }
+  ]
+}</pre>
+<pre>scripts/push-config.sh 192.168.1.50 config.json</pre>
+  <table>
+    <tr><th>Widget</th><th>Options</th></tr>
+    <tr><td><code>clock</code></td><td><code>label</code>, <code>timezone</code> (e.g. <code>Asia/Tokyo</code>, omit for local), <code>size</code> (<code>l</code>/<code>m</code>), <code>hour24</code>, <code>date</code></td></tr>
+    <tr><td><code>weather</code></td><td><code>name</code>, <code>latitude</code>, <code>longitude</code>, <code>units</code>, <code>days</code>. Data from <a href="https://open-meteo.com">Open-Meteo</a> (no key). Only the coordinates you set are sent.</td></tr>
+  </table>
+  <p>Find a package name: <code>adb shell pm list packages | grep -i netflix</code>.</p>
+
+  <div class="rule" id="claude"></div>
+  <p class="kicker">Customise with Claude</p>
+  <h2>Describe it. Claude edits it. Claude looks at your TV.</h2>
+  <p>You do not need to know Android. Open the project in <a href="https://claude.com/claude-code">Claude Code</a>, keep the TV connected over <code>adb</code>, and describe the change. The repo's <code>CLAUDE.md</code> tells Claude how to build, install and take a screenshot to check its own work.</p>
+<pre>git clone https://github.com/oliverweissl/RietveldTV.git
+cd RietveldTV
+claude</pre>
+  <p><strong>Change what is shown</strong> (config only):</p>
+  <div class="prompt">Replace Spotify with Disney+ and move Netflix to the end.</div>
+  <div class="prompt">Add clocks for New York and Sydney next to the main clock.</div>
+  <div class="prompt">Add a weather widget for Munich in °C with a 4-day forecast.</div>
+  <p><strong>Change how it looks</strong> (a few lines of Java):</p>
+  <div class="prompt">Make the icons wider and less rounded, and the glass clearer. Build, install on my TV, take a screenshot and look at it before telling me it is done.</div>
+  <div class="prompt">Make the spotlight beam narrower and slightly warmer. Check the first, a middle and the last app.</div>
+  <div class="prompt">Use Inter instead of IBM Plex (download the OFL fonts) and replace the yellow accents with orange.</div>
+  <p><strong>Add a widget:</strong></p>
+  <div class="prompt">Add a widget type "countdown" with options label and date that shows the days left. Follow the style of ClockWidget, register it, document it in the README, build, install and screenshot.</div>
+  <p>Tips: give a reference ("like Apple's Liquid Glass", a website URL) and a feeling ("calmer", "more modernist"), not pixel values. Change one thing at a time and commit when you like it. If Claude cannot see a reference image, save it to a file and give it the path.</p>
+  <p><a href="CUSTOMIZE-WITH-CLAUDE.md">Read the full guide →</a></p>
+
+  <footer>
+    <p>MIT licence. Fonts: IBM Plex (SIL OFL 1.1). Weather: Open-Meteo. Not affiliated with Google, Xiaomi, Apple, Netflix, Spotify or YouTube; their names and logos belong to their owners.</p>
+    <p><a href="https://github.com/oliverweissl/RietveldTV">github.com/oliverweissl/RietveldTV</a></p>
+  </footer>
+</main>
+<script>
+  // copy buttons on code blocks
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var b = document.createElement('button');
+    b.className = 'copy'; b.textContent = 'copy'; b.type = 'button';
+    b.addEventListener('click', function () {
+      var text = pre.innerText.replace(/\ncopy$/, '').replace(/^copy\n?/, '');
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(function () {
+        b.textContent = 'copied'; setTimeout(function () { b.textContent = 'copy'; }, 1500);
+      }, function () {});
+    });
+    pre.appendChild(b);
+  });
+  // theme toggle (remembered when storage is available)
+  var root = document.documentElement;
+  try { var t = localStorage.getItem('theme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  document.getElementById('theme').addEventListener('click', function () {
+    var dark = getComputedStyle(root).getPropertyValue('--bg').trim() === '#000';
+    var next = dark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+  });
+</script>
+</body>
+</html>

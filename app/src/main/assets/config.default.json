@@ -1,0 +1,13 @@
+{
+  "apps": [
+    "com.netflix.ninja",
+    "com.google.android.youtube.tv",
+    "com.apple.atve.androidtv.appletv",
+    "com.spotify.tv.android",
+    "com.google.android.youtube.tvmusic"
+  ],
+  "showSettings": true,
+  "widgets": [
+    { "type": "clock" }
+  ]
+}
