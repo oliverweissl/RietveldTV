@@ -3,7 +3,7 @@
 A minimal, ad-free home screen for Android TV / Google TV.
 Black room, one spotlight, glass app icons, a few quiet widgets. Inspired by Gerrit Rietveld's *Red and Blue Chair* and modernist web design.
 
-![RietveldTV home screen](docs/screenshot.png)
+![RietveldTV home screen](docs/screenshot-widgets.png)
 
 - **No ads, no recommendations, no accounts, no tracking.** It only shows the apps you list.
 - **Glass icons under a spotlight.** The focused app is lit, the rest sink into the dark, with a soft reflection on the floor.
@@ -11,7 +11,6 @@ Black room, one spotlight, glass app icons, a few quiet widgets. Inspired by Ger
 - **Configured with one JSON file.** Edit it by hand or [let Claude do it](docs/CUSTOMIZE-WITH-CLAUDE.md).
 - **No network access unless you add a weather widget.** No analytics, no third-party SDKs.
 
-![With widgets](docs/screenshot-widgets.png)
 
 ## Install
 
