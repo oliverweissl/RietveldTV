@@ -238,25 +238,51 @@
       [0, 45, 90, 135, 180, 225, 270, 315].map(function (a) { return '<line x1="0" y1="-34" x2="0" y2="-46" transform="rotate(' + a + ')"/>'; }).join('') + '</g>'
   };
 
-  // "Rietveld logos": full Mondrian tiles on a 100 x 60 grid, only red / blue / yellow with black gaps (see IconTile.renderAbstract)
+  // "Rietveld logos": every tile is ONE Mondrian panel tiled on a shared 100 x 60 grid with a constant black line between
+  // cells (2.6 grid units), edges at the tile border flush. Cells are red, blue, yellow or dark paper (the stand-in for white);
+  // one plane dominates and the hint of the app lives inside a single cell (see IconTile.renderAbstract).
+  var PAPER = '#202226', LINE = 2.6;
+  function cell(c, x1, y1, x2, y2) {
+    var h = LINE / 2, a = x1 <= 0 ? 0 : x1 + h, b = y1 <= 0 ? 0 : y1 + h, d = x2 >= 100 ? 100 : x2 - h, e = y2 >= 60 ? 60 : y2 - h;
+    return rect((a * 3.32).toFixed(2), (b * 194 / 60).toFixed(2), ((d - a) * 3.32).toFixed(2), ((e - b) * 194 / 60).toFixed(2), c);
+  }
   function plane(c, pts) {
     var out = [];
-    for (var i = 0; i + 1 < pts.length; i += 2) out.push((pts[i] * 3.32).toFixed(1) + ',' + (pts[i + 1] * 194 / 60).toFixed(1));
+    for (var i = 0; i + 1 < pts.length; i += 2) out.push((pts[i] * 3.32).toFixed(2) + ',' + (pts[i + 1] * 194 / 60).toFixed(2));
     return poly(c, out.join(' '));
   }
-  function box(x1, y1, x2, y2) { return [x1, y1, x2, y1, x2, y2, x1, y2]; }
   var ABSTRACT = {
-    Stream: function () { return plane(R, box(0, 0, 82, 60)) + plane(B, box(84, 0, 100, 60)) + plane(Y, [28, 13, 28, 47, 56, 30]); },
-    Video: function () { return plane(Y, box(0, 0, 100, 9)) + plane(B, box(0, 12, 100, 48)) + plane(R, box(38, 20, 62, 40)) + plane(Y, box(0, 51, 100, 60)); },
-    Music: function () { return plane(B, box(0, 0, 100, 18)) + plane(Y, box(0, 21, 78, 39)) + plane(R, box(0, 42, 56, 60)); },
-    Games: function () { return plane(Y, box(0, 0, 44, 60)) + plane(B, box(46, 0, 100, 26)) + plane(R, [46, 28, 100, 28, 100, 60]); },
-    Photos: function () { return plane(B, box(0, 0, 100, 38)) + plane(Y, [0, 60, 38, 41, 76, 60]) + plane(R, box(78, 41, 100, 60)); }
+    Stream: function () {                         // a big blue screen holding a yellow play wedge
+      return cell(B, 0, 0, 68, 60) + cell(R, 68, 0, 100, 38) + cell(PAPER, 68, 38, 100, 60) + plane(Y, [24, 13, 24, 47, 49, 30]);
+    },
+    Video: function () {                          // a yellow film strip with sprocket holes above a blue frame
+      var holes = '';
+      for (var k = 0; k < 6; k++) holes += cell(PAPER, 7 + k * 15, 3.6, 15 + k * 15, 8.4);
+      return cell(Y, 0, 0, 100, 12) + holes + cell(B, 0, 12, 70, 60) + cell(R, 70, 12, 100, 38) + cell(PAPER, 70, 38, 100, 60);
+    },
+    Music: function () {                          // three bars of falling length
+      return cell(Y, 0, 0, 100, 20) + cell(R, 0, 20, 76, 40) + cell(PAPER, 76, 20, 100, 40) + cell(B, 0, 40, 52, 60) + cell(PAPER, 52, 40, 100, 60);
+    },
+    Games: function () {                          // a yellow pad with a blue cross, two coloured buttons beside it
+      return cell(Y, 0, 0, 56, 60) + cell(B, 56, 0, 100, 28) + cell(R, 56, 28, 100, 60) +
+        plane(B, [10, 25, 20, 25, 20, 15, 30, 15, 30, 25, 40, 25, 40, 35, 30, 35, 30, 45, 20, 45, 20, 35, 10, 35]);
+    },
+    Photos: function () {                         // a blue sky cell with a yellow sun, ground below
+      return cell(B, 0, 0, 100, 40) + cell(Y, 0, 40, 64, 60) + cell(R, 64, 40, 100, 60) + plane(Y, [78, 10, 88, 20, 78, 30, 68, 20]);
+    }
   };
+  // an app without a hand-made panel: a deterministic 3-cell panel from its name
+  function abstractFallback(name) {
+    var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+    var pal = [R, B, Y], a = Math.abs(h) % 3, b = (a + 1 + (Math.abs(h >> 3) % 2)) % 3, d = 3 - a - b;
+    var vx = 36 + Math.abs(h >> 5) % 24, hy = 20 + Math.abs(h >> 9) % 20;
+    return cell(pal[a], 0, 0, vx, 60) + cell(pal[b], vx, 0, 100, hy) + cell(pal[d], vx, hy, 100, 60);
+  }
   var TILES = [{ name: 'Stream' }, { name: 'Video' }, { name: 'Music' }, { name: 'Games' }, { name: 'Photos' },
                { name: 'Widgets', kind: 'widgets' }, { name: 'Settings', kind: 'settings' }];
   function tileSvg(t) {
     if (t.kind) return svg(SYMBOL[t.name]);                                   // bare plus / bare gear, always off-white
-    if (state.rietveld) return svg(ABSTRACT[t.name]());                       // full Mondrian tile
+    if (state.rietveld) return svg((ABSTRACT[t.name] || function () { return abstractFallback(t.name); })());                       // full Mondrian tile
     if (state.iconStyle === 'plate') return svg(rect(0, 0, 332, 194, '#18191b') + GLYPH[t.name](false));
     return svg(GLYPH[t.name](state.iconStyle === 'mono'));
   }
