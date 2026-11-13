@@ -7,6 +7,7 @@ Black room, one spotlight, flat rectangular app icons, a few quiet widgets. Insp
 
 **Try the interactive demo:** <https://oliverweissl.github.io/RietveldTV/demo.html> (once GitHub Pages is on), or open [`docs/demo.html`](docs/demo.html) locally in any browser. Use the arrow keys or the on-screen remote.
 
+- **The chair's palette, nothing else:** red `#D62B2B`, blue `#1C3FA8`, yellow `#F5D800` and grid black `#1A1A1A`, on a pure black room.
 - **No ads, no recommendations, no accounts, no tracking.** It only shows the apps you list.
 - **Flat icons under a spotlight.** Hard-edged rectangles in each app's own colours. The focused app is lit and gets a small yellow end-cut tab, like the painted ends of the Red and Blue Chair; the rest sink into the dark.
 - **Logo-only icons.** No background plates: each app is just its logo on the black. Optionally swap the company logos for abstract Mondrian-style tiles in red, blue and yellow that hint at the original (switch in the widget editor).

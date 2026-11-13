@@ -23,7 +23,7 @@ Look at the screenshot before saying a visual change works. Check the first app,
 **Screenshot hook:** `.claude/settings.json` runs `scripts/hooks/refresh-screenshot.sh` after any Bash call that installs the APK. It refreshes `docs/screenshot-widgets.png` (used by the README and the project page) via `scripts/update-screenshots.sh`. Look at the new image, then commit and push it with the change. Run the script by hand if the hook did not fire.
 
 ## Design rules
-- Pure black background. Colour only as small accents: red `205,30,38`, blue `30,70,200`, yellow `248,200,40`.
+- Pure black background. Colour only as small accents, and only these four (from the Red and Blue Chair): red `#D62B2B` (backrest), blue `#1C3FA8` (seat), yellow `#F5D800` (rail ends), grid black `#1A1A1A` (framework). Defined once as `C_RED`, `C_BLUE`, `C_YELLOW`, `C_GRID` in `HomeActivity.java` and as `--red/--blue/--yellow` in the docs pages. Never hard-code another accent.
 - Fonts: IBM Plex Sans (light/regular/medium) and Plex Mono. No round, friendly fonts.
 - Icons are logo-only by default (`iconStyle: "glyph"`): no background plate, no gloss, no glass. Adaptive icons use their foreground layer, flat logo-on-colour icons have the backdrop keyed out. The lamp and one yellow end-cut tab mark focus.
 - Light should be smooth: compute gradients per pixel instead of stacking translucent layers.

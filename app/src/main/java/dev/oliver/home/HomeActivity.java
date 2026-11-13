@@ -42,6 +42,10 @@ import java.util.Locale;
 
 public class HomeActivity extends Activity {
 
+    /** The palette, taken from the Red and Blue Chair: backrest red, seat blue, rail-end yellow, framework black. */
+    static final int C_RED = 0xFFD62B2B, C_BLUE = 0xFF1C3FA8, C_YELLOW = 0xFFF5D800, C_GRID = 0xFF1A1A1A;
+
+
     private Config config = new Config();
     private final java.util.List<Widgets.Widget> widgets = new ArrayList<>();
     private FrameLayout rootView;
@@ -95,7 +99,7 @@ public class HomeActivity extends Activity {
         LinearLayout term = new LinearLayout(this);
         term.setOrientation(LinearLayout.HORIZONTAL);
         term.setGravity(Gravity.CENTER_VERTICAL);
-        int[] acc = {Color.rgb(205, 30, 38), Color.rgb(30, 70, 200), Color.rgb(248, 200, 40)};
+        int[] acc = {C_RED, C_BLUE, C_YELLOW};
         for (int col : acc) {
             View sq = new View(this);
             sq.setBackgroundColor(col);
@@ -120,7 +124,7 @@ public class HomeActivity extends Activity {
         root.addView(rule, rp);
         for (int side = 0; side < 2; side++) {
             View cap = new View(this);
-            cap.setBackgroundColor(Color.rgb(248, 200, 40));
+            cap.setBackgroundColor(C_YELLOW);
             FrameLayout.LayoutParams capLp = new FrameLayout.LayoutParams(px(22), px(5),
                     Gravity.TOP | (side == 0 ? Gravity.START : Gravity.END));
             capLp.setMargins(px(56), px(176), px(56), 0);
@@ -290,8 +294,8 @@ public class HomeActivity extends Activity {
                 View f = row.getFocusedChild() != null ? row.getFocusedChild() : row.getChildAt(0);
                 int idx = row.indexOfChild(f), n = indicator.getChildCount();
                 for (int k = 0; k < n; k++) {
-                    indicator.getChildAt(k).setBackgroundColor(k == idx ? Color.rgb(205, 30, 38)
-                            : (config.showSettings && k == n - 1) ? Color.rgb(30, 70, 200) : 0x40F2F0F0);
+                    indicator.getChildAt(k).setBackgroundColor(k == idx ? C_RED
+                            : (config.showSettings && k == n - 1) ? C_BLUE : 0x40F2F0F0);
                 }
                 if (label.getText().length() == 0 && f instanceof IconTile) label.setText(((IconTile) f).title.toUpperCase(Locale.getDefault()));
             }
@@ -373,8 +377,8 @@ public class HomeActivity extends Activity {
                 dial();
                 int idx = row.indexOfChild(v), n = indicator.getChildCount();
                 for (int k = 0; k < n; k++) {
-                    indicator.getChildAt(k).setBackgroundColor(k == idx ? Color.rgb(205, 30, 38)
-                            : (config.showSettings && k == n - 1) ? Color.rgb(30, 70, 200) : 0x40F2F0F0);
+                    indicator.getChildAt(k).setBackgroundColor(k == idx ? C_RED
+                            : (config.showSettings && k == n - 1) ? C_BLUE : 0x40F2F0F0);
                 }
             }
         });
@@ -479,7 +483,7 @@ public class HomeActivity extends Activity {
             Bitmap b = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(b);
             RectF r = new RectF(0, 0, fw, fh);
-            p.setColor(Color.rgb(24, 25, 27));
+            p.setColor(C_GRID);
             c.drawRect(r, p);
             if (art instanceof android.graphics.drawable.AdaptiveIconDrawable) {
                 android.graphics.drawable.AdaptiveIconDrawable ad = (android.graphics.drawable.AdaptiveIconDrawable) art;
@@ -564,7 +568,7 @@ public class HomeActivity extends Activity {
 
         // ---- Rietveld-style stand-ins: a full Mondrian tile of flat red / blue / yellow planes with black gaps between them,
         // arranged to hint at the original logo. Coordinates are on a 100 x 60 grid that fills the whole tile.
-        private static final int RED = 0xFFCD1E26, BLUE = 0xFF1E46C8, YELLOW = 0xFFF8C828;
+        private static final int RED = C_RED, BLUE = C_BLUE, YELLOW = C_YELLOW;
 
         private void plane(Canvas c, Paint q, float sx, float sy, int color, float... pts) {
             Path pa = new Path();
@@ -578,7 +582,7 @@ public class HomeActivity extends Activity {
 
         private float[] box(float x1, float y1, float x2, float y2) { return new float[]{x1, y1, x2, y1, x2, y2, x1, y2}; }
 
-        private static final int PAPER = 0xFF202226;      // the "empty" cells: dark neutral, where Mondrian would use white
+        private static final int PAPER = 0xFF000000;      // the "empty" cells are voids: the room's black shows through the framework
         private static final float LINE = 2.6f;           // black line width in grid units, identical everywhere
 
         /** A cell between grid lines. Edges that touch the tile border stay flush, interior edges leave half a line each. */
@@ -596,6 +600,7 @@ public class HomeActivity extends Activity {
         private Bitmap renderAbstract() {
             Bitmap out = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(out);
+            c.drawColor(C_GRID);                              // the framework: grid black shows between the planes
             Paint q = new Paint(Paint.ANTI_ALIAS_FLAG);
             float sx = fw / 100f, sy = fh / 60f;
             switch (pkg) {
@@ -707,7 +712,7 @@ public class HomeActivity extends Activity {
             c.drawBitmap(content, x0, y0, p);
             p.setAlpha(255);
             // the yellow end-cut tab, only on the lit tile
-            p.setColor(Color.argb(Math.round(255 * L), 248, 200, 40));
+            p.setColor((C_YELLOW & 0x00FFFFFF) | (Math.round(255 * L) << 24));
             float tx = x0 + (fw - px(30)) / 2f;
             c.drawRect(tx, y1 + px(5), tx + px(30), y1 + px(9), p);
         }
@@ -775,7 +780,7 @@ public class HomeActivity extends Activity {
         r.setClickable(true);
         r.setPadding(0, px(9), px(18), px(9));
         final View bar = new View(this);
-        bar.setBackgroundColor(Color.rgb(248, 200, 40));
+        bar.setBackgroundColor(C_YELLOW);
         bar.setVisibility(View.INVISIBLE);
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(px(4), px(30));
         bp.setMarginEnd(px(16));
@@ -822,7 +827,7 @@ public class HomeActivity extends Activity {
         rp.setMargins(px(56), px(88), px(56), 0);
         editor.addView(rule, rp);
         View cap = new View(this);
-        cap.setBackgroundColor(Color.rgb(248, 200, 40));
+        cap.setBackgroundColor(C_YELLOW);
         FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(px(22), px(5), Gravity.TOP | Gravity.START);
         cp.setMargins(px(56), px(86), 0, 0);
         editor.addView(cap, cp);

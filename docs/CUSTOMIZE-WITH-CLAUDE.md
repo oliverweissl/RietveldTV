@@ -44,7 +44,7 @@ All drawing is in `app/src/main/java/dev/oliver/home/HomeActivity.java`. These a
 | Icon style | `iconStyle` in `config.json`: `glyph` (logo only, default), `mono` (one-colour themed icon, Android 13+), `plate` (whole icon) | "Switch the icons to mono." |
 | Spotlight | `SceneView.build` (`topHalf`, `botHalf`, intensity `0.15f`, pool `0.36f`) | "Make the beam narrower and warmer." |
 | Spacing and zoom | `dial()` and `tile()` margins | "Space the apps further apart, shrink the neighbours more." |
-| Colours | `Color.rgb(...)` accents: red `205,30,38`, blue `30,70,200`, yellow `248,200,40` | "Replace the yellow accents with orange." |
+| Colours | the four palette constants `C_RED #D62B2B`, `C_BLUE #1C3FA8`, `C_YELLOW #F5D800`, `C_GRID #1A1A1A` at the top of `HomeActivity.java` (and `--red/--blue/--yellow` in the docs pages) | "Replace the yellow accents with orange." |
 | Fonts | `app/src/main/assets/fonts` + `loadFonts()` | "Use Inter instead of IBM Plex. Download the OFL fonts." |
 | Wallpaper | `loadWallpaper()` (pure black by default) | "Use a very dark blue gradient instead of black." |
 
