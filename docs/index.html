@@ -109,17 +109,18 @@
   "apps": ["com.netflix.ninja", "com.google.android.youtube.tv", "com.spotify.tv.android"],
   "showSettings": true,
   "widgets": [
-    { "type": "weather", "name": "Berlin", "latitude": 52.52, "longitude": 13.41, "units": "celsius", "days": 3 },
-    { "type": "clock", "label": "Tokyo", "timezone": "Asia/Tokyo" },
-    { "type": "clock" }
+    { "type": "weather", "city": "Berlin", "position": "top-left", "days": 3 },
+    { "type": "clock", "label": "Tokyo", "timezone": "Asia/Tokyo", "position": "top-center" },
+    { "type": "clock", "position": "top-right" }
   ]
 }</pre>
 <pre>scripts/push-config.sh 192.168.1.50 config.json</pre>
   <table>
     <tr><th>Widget</th><th>Options</th></tr>
     <tr><td><code>clock</code></td><td><code>label</code>, <code>timezone</code> (e.g. <code>Asia/Tokyo</code>, omit for local), <code>size</code> (<code>l</code>/<code>m</code>), <code>hour24</code>, <code>date</code></td></tr>
-    <tr><td><code>weather</code></td><td><code>name</code>, <code>latitude</code>, <code>longitude</code>, <code>units</code>, <code>days</code>. Data from <a href="https://open-meteo.com">Open-Meteo</a> (no key). Only the coordinates you set are sent.</td></tr>
+    <tr><td><code>weather</code></td><td><code>city</code> (or <code>latitude</code> + <code>longitude</code>), <code>name</code>, <code>units</code>, <code>days</code>. Data from <a href="https://open-meteo.com">Open-Meteo</a> (no key). Only the city or coordinates you set are sent.</td></tr>
   </table>
+  <p>Every widget takes a <code>position</code>: <code>top-right</code> (default), <code>top-center</code>, <code>top-left</code>, <code>bottom-left</code> or <code>bottom-right</code>.</p>
   <p>Find a package name: <code>adb shell pm list packages | grep -i netflix</code>.</p>
 
   <div class="rule" id="claude"></div>
@@ -132,7 +133,7 @@ claude</pre>
   <p><strong>Change what is shown</strong> (config only):</p>
   <div class="prompt">Replace Spotify with Disney+ and move Netflix to the end.</div>
   <div class="prompt">Add clocks for New York and Sydney next to the main clock.</div>
-  <div class="prompt">Add a weather widget for Munich in °C with a 4-day forecast.</div>
+  <div class="prompt">Add a weather widget for Munich in °C with a 4-day forecast at the top left, and move the Tokyo clock to the top centre.</div>
   <p><strong>Change how it looks</strong> (a few lines of Java):</p>
   <div class="prompt">Make the icons wider and less rounded, and the glass clearer. Build, install on my TV, take a screenshot and look at it before telling me it is done.</div>
   <div class="prompt">Make the spotlight beam narrower and slightly warmer. Check the first, a middle and the last app.</div>

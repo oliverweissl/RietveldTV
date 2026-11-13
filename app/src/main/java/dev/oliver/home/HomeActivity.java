@@ -44,7 +44,9 @@ public class HomeActivity extends Activity {
 
     private Config config = new Config();
     private final java.util.List<Widgets.Widget> widgets = new ArrayList<>();
-    private LinearLayout widgetRow;
+    private FrameLayout rootView;
+    private final java.util.List<View> widgetHosts = new ArrayList<>();
+    private View termRow;
     private Widgets.Style style;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -88,12 +90,7 @@ public class HomeActivity extends Activity {
         root.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
 
         style = new Widgets.Style(this, plexLight, plexRegular, plexMedium, plexMono);
-        widgetRow = new LinearLayout(this);
-        widgetRow.setOrientation(LinearLayout.HORIZONTAL);
-        widgetRow.setGravity(Gravity.TOP | Gravity.END);
-        FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.END);
-        cp.setMargins(0, px(36), px(56), 0);
-        root.addView(widgetRow, cp);
+        rootView = root;
 
         LinearLayout term = new LinearLayout(this);
         term.setOrientation(LinearLayout.HORIZONTAL);
@@ -113,6 +110,7 @@ public class HomeActivity extends Activity {
         FrameLayout.LayoutParams tp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
         tp.setMargins(px(56), px(46), 0, 0);
         root.addView(term, tp);
+        termRow = term;
 
         // Rietveld-style structure: a thin rule with yellow end-cut caps under the header
         View rule = new View(this);
@@ -146,7 +144,7 @@ public class HomeActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setClipChildren(false);
-        row.setPadding(px(356), px(30), px(356), px(6));
+        row.setPadding(px(349), px(30), px(349), px(6));
         scroller.addView(row, new ViewGroup.LayoutParams(-2, -2));
         FrameLayout.LayoutParams sp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         sp.setMargins(0, 0, 0, px(56));
@@ -185,17 +183,46 @@ public class HomeActivity extends Activity {
         }
     }
 
+    /**
+     * Places each widget at the anchor named in its "position": top-left, top-center, top-right (default),
+     * bottom-left or bottom-right. Widgets sharing an anchor sit side by side in config order.
+     */
     private void buildWidgets() {
         widgets.clear();
-        widgetRow.removeAllViews();
+        for (View v : widgetHosts) rootView.removeView(v);
+        widgetHosts.clear();
+        java.util.Map<String, LinearLayout> hosts = new java.util.HashMap<>();
+        boolean topLeft = false;
         for (org.json.JSONObject cfg : config.widgets) {
+            String pos = cfg.optString("position", "top-right");
+            int fg, align, mt = 0, mb = 0, ms = 0, me = 0;
+            switch (pos) {
+                case "top-left":     fg = Gravity.TOP | Gravity.START;              align = Gravity.START; mt = 36; ms = 56; topLeft = true; break;
+                case "top-center":   fg = Gravity.TOP | Gravity.CENTER_HORIZONTAL;  align = Gravity.CENTER_HORIZONTAL; mt = 36; break;
+                case "bottom-left":  fg = Gravity.BOTTOM | Gravity.START;           align = Gravity.START; mb = 24; ms = 56; break;
+                case "bottom-right": fg = Gravity.BOTTOM | Gravity.END;             align = Gravity.END;   mb = 24; me = 56; break;
+                default: pos = "top-right"; fg = Gravity.TOP | Gravity.END;         align = Gravity.END;   mt = 36; me = 56; break;
+            }
+            style.gravity = align;
             Widgets.Widget w = Widgets.create(style, cfg);
             if (w == null) continue;
+            LinearLayout host = hosts.get(pos);
+            if (host == null) {
+                host = new LinearLayout(this);
+                host.setOrientation(LinearLayout.HORIZONTAL);
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, -2, fg);
+                lp.setMargins(px(ms), px(mt), px(me), px(mb));
+                rootView.addView(host, lp);
+                widgetHosts.add(host);
+                hosts.put(pos, host);
+            }
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-            if (widgetRow.getChildCount() > 0) lp.setMarginStart(px(40));
-            widgetRow.addView(w.view, lp);
+            if (host.getChildCount() > 0) lp.setMarginStart(px(40));
+            host.addView(w.view, lp);
             widgets.add(w);
         }
+        // the typing line lives top-left: step aside when a widget is placed there, or when the config turns it off
+        termRow.setVisibility(topLeft || !config.terminal ? View.GONE : View.VISIBLE);
     }
 
     // Home screen is the root: swallow Back.
@@ -326,7 +353,7 @@ public class HomeActivity extends Activity {
         g.setFocusable(true);
         g.setClickable(true);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(g.totalW(), g.totalH());
-        lp.setMargins(px(40), 0, px(40), 0);
+        lp.setMargins(px(44), 0, px(44), 0);
         g.setLayoutParams(lp);
         g.setOnFocusChangeListener((v, has) -> {
             if (has) {
@@ -411,7 +438,7 @@ public class HomeActivity extends Activity {
      */
     private class GlassBox extends View {
         private final Drawable art;
-        private final int fw = px(151), fh = px(88), depth = px(26), side = px(8), refl = px(30);
+        private final int fw = px(166), fh = px(97), depth = px(28), side = px(8), refl = px(32);
         String title = "";
         private float lit = 0f, dir = 0f;
         private Bitmap refr, spec;
@@ -492,7 +519,7 @@ public class HomeActivity extends Activity {
             int[] src = new int[fw * fh];
             content.getPixels(src, 0, fw, 0, 0, fw, fh);
             int[] out = new int[fw * fh], hl = new int[fw * fh];
-            float rad = fh * 0.22f, bw = fh * 0.15f;
+            float rad = fh * 0.22f, bw = fh * 0.10f;
             float cx = fw / 2f, cy = fh / 2f, hx = fw / 2f - rad, hy = fh / 2f - rad;
             float lx = -0.35f, ly = -0.94f;                       // light from the top, a touch from the left
             for (int y = 0; y < fh; y++) {
@@ -511,16 +538,16 @@ public class HomeActivity extends Activity {
                     else if (qx > qy) { nx = Math.signum(px_); ny = 0f; }
                     else { nx = 0f; ny = Math.signum(py_); }
                     float t = Math.max(0f, Math.min(1f, 1f - dIn / bw));        // 0 in the flat middle, 1 on the rim
-                    float shift = bw * 0.55f * t * t;                        // refraction: strongest at the rim
-                    float rr = chan(src, x + 0.5f - nx * shift * 0.92f, y + 0.5f - ny * shift * 0.92f, 16);
+                    float shift = bw * 0.28f * t * t;                        // refraction: strongest at the rim
+                    float rr = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 16);
                     float gg = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 8);
-                    float bb = chan(src, x + 0.5f - nx * shift * 1.08f, y + 0.5f - ny * shift * 1.08f, 0);
+                    float bb = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 0);
                     out[y * fw + x] = Color.argb(Math.round(255 * cover), (int) rr, (int) gg, (int) bb);
                     // light on the bevel: main highlight facing the lamp, a weaker bounce on the opposite side, hairline fresnel rim
                     float nl = nx * lx + ny * ly;
-                    float s1 = (float) Math.pow(Math.max(0f, nl), 1.8) * (float) Math.pow(t, 0.8) * 1.35f;
-                    float s2 = (float) Math.pow(Math.max(0f, -nl), 2.4) * (float) Math.pow(t, 1.1) * 0.55f;
-                    float fres = (float) Math.pow(t, 3) * 0.42f;
+                    float s1 = (float) Math.pow(Math.max(0f, nl), 3.0) * (float) Math.pow(t, 2.0) * 0.85f;
+                    float s2 = (float) Math.pow(Math.max(0f, -nl), 4.0) * (float) Math.pow(t, 2.0) * 0.22f;
+                    float fres = (float) Math.pow(t, 6) * 0.20f;
                     float a = Math.min(1f, s1 + s2 + fres) * cover;
                     hl[y * fw + x] = Color.argb(Math.round(255 * a), 255, 255, 255);
                 }
@@ -589,7 +616,7 @@ public class HomeActivity extends Activity {
 
             // rim highlights from the bevel slope, brighter when the lamp is on it
             p.setColor(Color.WHITE);
-            p.setAlpha((int) (255 * (0.30f + 0.70f * L) * st));
+            p.setAlpha((int) (255 * (0.35f + 0.65f * L) * st));
             c.drawBitmap(spec, x0, y0, p);
             p.setAlpha(255);
         }

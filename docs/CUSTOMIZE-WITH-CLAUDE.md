@@ -21,7 +21,11 @@ Everything in [`config.json`](config.example.json) is safe to change by asking:
 
 > Add a second clock for New York and one for Sydney next to the main clock.
 
-> Add a weather widget for Munich in °C with a 4-day forecast.
+> Add a weather widget for Munich in °C with a 4-day forecast, top left.
+
+> Move the Tokyo clock to the top centre.
+
+Every widget has a `position` (`top-left`, `top-center`, `top-right`, `bottom-left`, `bottom-right`); weather takes a `city` and looks up the coordinates itself.
 
 Claude edits `config.json` and runs `scripts/push-config.sh <tv-ip> config.json`. To find a package name:
 
@@ -33,8 +37,8 @@ All drawing is in `app/src/main/java/dev/oliver/home/HomeActivity.java`. These a
 
 | What | Where | Example prompt |
 | --- | --- | --- |
-| Icon shape and size | `GlassBox` (`fw`, `fh`, corner `rad`) | "Make the icons wider and less rounded." |
-| Glass look | `GlassBox.drawIcon` (top gloss, rim light, edge darkening) | "Make the glass clearer and the rim light stronger." |
+| Icon shape and size | `GlassBox` (`fw`, `fh`, corner `rad`) | "Make the icons 10% bigger and less rounded." |
+| Glass look | `GlassBox.build` (`bw` bevel width, `shift` refraction, `s1`/`s2`/`fres` rim light) | "Make the glass edge more visible." or "Even subtler." |
 | Spotlight | `SceneView.build` (`topHalf`, `botHalf`, intensity `0.15f`, pool `0.36f`) | "Make the beam narrower and warmer." |
 | Spacing and zoom | `dial()` and `tile()` margins | "Space the apps further apart, shrink the neighbours more." |
 | Colours | `Color.rgb(...)` accents: red `205,30,38`, blue `30,70,200`, yellow `248,200,40` | "Replace the yellow accents with orange." |

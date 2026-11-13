@@ -39,9 +39,9 @@ scripts/push-config.sh 192.168.1.50 config.json
   "apps": ["com.netflix.ninja", "com.google.android.youtube.tv", "com.spotify.tv.android"],
   "showSettings": true,
   "widgets": [
-    { "type": "weather", "name": "Berlin", "latitude": 52.52, "longitude": 13.41, "units": "celsius", "days": 3 },
-    { "type": "clock", "label": "Tokyo", "timezone": "Asia/Tokyo" },
-    { "type": "clock" }
+    { "type": "weather", "city": "Berlin", "position": "top-left", "days": 3 },
+    { "type": "clock", "label": "Tokyo", "timezone": "Asia/Tokyo", "position": "top-center" },
+    { "type": "clock", "position": "top-right" }
   ]
 }
 ```
@@ -50,14 +50,17 @@ scripts/push-config.sh 192.168.1.50 config.json
 | --- | --- |
 | `apps` | Package names, in display order. Only installed apps appear. Find a package with `adb shell pm list packages \| grep -i netflix`. |
 | `showSettings` | Show the Settings tile at the end of the row. |
-| `widgets` | Shown top-right, left to right. Types below. |
+| `terminal` | The small typing line "> 5 apps ready" at the top-left (default `true`). It hides itself when a widget is placed top-left. |
+| `widgets` | Any number of widgets, each with a `type` and an optional `position`. Types below. |
 
 **Widgets**
+
+Every widget takes a `position`: `top-right` (default), `top-center`, `top-left`, `bottom-left` or `bottom-right`. Widgets with the same position sit side by side in config order. Keep top widgets under about 130 dp tall so they stay above the rule line.
 
 | Type | Options |
 | --- | --- |
 | `clock` | `label`, `timezone` (IANA id like `Asia/Tokyo`; omit for local time), `size` (`l`/`m`), `hour24` (default `true`), `date` |
-| `weather` | `name`, `latitude`, `longitude`, `units` (`celsius`/`fahrenheit`), `days` (0–5). Data from [Open-Meteo](https://open-meteo.com) (no key, no account). Only the coordinates you configure are sent. |
+| `weather` | `city` (looked up once) **or** `latitude` + `longitude`, `name` (label), `units` (`celsius`/`fahrenheit`), `days` (0–5). Data from [Open-Meteo](https://open-meteo.com) (no key, no account). Only the city name or the coordinates you configure are sent. |
 
 Want a new widget? See [Add your own widget](docs/CUSTOMIZE-WITH-CLAUDE.md#add-a-widget). It is about 40 lines of Java.
 

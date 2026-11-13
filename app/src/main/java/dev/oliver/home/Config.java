@@ -28,6 +28,8 @@ final class Config {
     /** Widget definitions, shown left to right in the top-right corner. Each has at least a "type". */
     final List<JSONObject> widgets = new ArrayList<>();
     boolean showSettings = true;
+    /** The small typing line "> 5 apps ready" in the top-left corner. Hidden automatically if a widget sits there. */
+    boolean terminal = true;
 
     static Config load(Context c) {
         String json = null;
@@ -57,6 +59,7 @@ final class Config {
             JSONArray widgets = o.optJSONArray("widgets");
             if (widgets != null) for (int i = 0; i < widgets.length(); i++) cfg.widgets.add(widgets.getJSONObject(i));
             cfg.showSettings = o.optBoolean("showSettings", true);
+            cfg.terminal = o.optBoolean("terminal", true);
             return cfg;
         } catch (Exception e) {
             Log.w(TAG, "config.json is not valid JSON, falling back to the default", e);

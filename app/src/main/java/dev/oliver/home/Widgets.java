@@ -39,6 +39,8 @@ final class Widgets {
         final Context ctx;
         final float dp;
         final Typeface light, regular, medium, mono;
+        /** Horizontal alignment for the widget being built: Gravity.START, CENTER_HORIZONTAL or END. */
+        int gravity = Gravity.END;
 
         Style(Context ctx, Typeface light, Typeface regular, Typeface medium, Typeface mono) {
             this.ctx = ctx;
@@ -55,7 +57,7 @@ final class Widgets {
             t.setTypeface(tf);
             t.setLetterSpacing(tracking);
             t.setIncludeFontPadding(false);
-            t.setGravity(Gravity.END);
+            t.setGravity(gravity);
             return t;
         }
     }
@@ -70,7 +72,7 @@ final class Widgets {
             this.cfg = cfg;
             view = new LinearLayout(st.ctx);
             view.setOrientation(LinearLayout.VERTICAL);
-            view.setGravity(Gravity.END);
+            view.setGravity(st.gravity);
         }
 
         /** Called on the UI thread, every ~15 s while the home screen is visible. */
@@ -138,9 +140,10 @@ final class Widgets {
     // -------------------------------------------------------------- weather
 
     /**
-     * {"type":"weather","name":"Berlin","latitude":52.52,"longitude":13.41,"units":"celsius","days":3}
+     * {"type":"weather","city":"Berlin","units":"celsius","days":3}                    (city is looked up once)
+     * {"type":"weather","name":"Home","latitude":52.52,"longitude":13.41}                  (or exact coordinates)
      * Needs the INTERNET permission (already in the manifest). Data: Open-Meteo (no key, no account).
-     * Only the latitude/longitude you put in the config are sent, nothing else.
+     * Only the city name (geocoding, once) or the coordinates you put in the config are sent, nothing else.
      */
     static final class WeatherWidget extends Widget {
         private static final long REFRESH_MS = 30 * 60 * 1000L;
@@ -154,13 +157,13 @@ final class Widgets {
         WeatherWidget(Style st, JSONObject cfg) {
             super(st, cfg);
             prefs = st.ctx.getSharedPreferences("weather", Context.MODE_PRIVATE);
-            key = cfg.optDouble("latitude") + "," + cfg.optDouble("longitude") + "," + cfg.optString("units", "celsius");
+            key = cfg.optString("city", "") + "|" + cfg.optDouble("latitude") + "," + cfg.optDouble("longitude") + "," + cfg.optString("units", "celsius");
             label = st.text(12, Color.argb(170, 242, 240, 240), st.mono, 0.14f);
             temp = st.text(52, Color.rgb(242, 240, 240), st.light, 0f);
             cond = st.text(13, Color.argb(190, 235, 235, 245), st.regular, 0.2f);
             hilo = st.text(13, Color.argb(150, 235, 235, 245), st.mono, 0.08f);
             days = st.text(12, Color.argb(190, 235, 235, 245), st.mono, 0.06f);
-            label.setText(cfg.optString("name", "WEATHER").toUpperCase(Locale.getDefault()));
+            label.setText(cfg.optString("name", cfg.optString("city", "WEATHER")).toUpperCase(Locale.getDefault()));
             temp.setText("--°");
             view.addView(label);
             view.addView(temp);
@@ -177,8 +180,9 @@ final class Widgets {
             new Thread(() -> {
                 try {
                     String units = cfg.optString("units", "celsius");
-                    String u = "https://api.open-meteo.com/v1/forecast?latitude=" + cfg.getDouble("latitude")
-                            + "&longitude=" + cfg.getDouble("longitude")
+                    double[] ll = locate();
+                    String u = "https://api.open-meteo.com/v1/forecast?latitude=" + ll[0]
+                            + "&longitude=" + ll[1]
                             + "&current=temperature_2m,weather_code"
                             + "&daily=weather_code,temperature_2m_max,temperature_2m_min"
                             + "&forecast_days=" + (Math.max(1, cfg.optInt("days", 3)) + 1)
@@ -201,6 +205,26 @@ final class Widgets {
                     fetching = false;
                 }
             }, "weather").start();
+        }
+
+        /** Coordinates from the config, or from a one-time geocoding lookup of "city" (cached on the device). */
+        private double[] locate() throws Exception {
+            if (cfg.has("latitude") && cfg.has("longitude")) return new double[]{cfg.getDouble("latitude"), cfg.getDouble("longitude")};
+            String city = cfg.getString("city");
+            String cached = prefs.getString("geo:" + city, null);
+            if (cached != null) { String[] a = cached.split(","); return new double[]{Double.parseDouble(a[0]), Double.parseDouble(a[1])}; }
+            String u = "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + java.net.URLEncoder.encode(city, "UTF-8");
+            HttpURLConnection c = (HttpURLConnection) new URL(u).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(8000);
+            StringBuilder sb = new StringBuilder();
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream()))) {
+                String line;
+                while ((line = r.readLine()) != null) sb.append(line);
+            }
+            JSONObject hit = new JSONObject(sb.toString()).getJSONArray("results").getJSONObject(0);
+            prefs.edit().putString("geo:" + city, hit.getDouble("latitude") + "," + hit.getDouble("longitude")).apply();
+            return new double[]{hit.getDouble("latitude"), hit.getDouble("longitude")};
         }
 
         private void show(String body) {
