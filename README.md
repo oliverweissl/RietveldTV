@@ -5,6 +5,8 @@ Black room, one spotlight, flat rectangular app icons, a few quiet widgets. Insp
 
 ![RietveldTV home screen](docs/screenshot-widgets.png)
 
+**Try the interactive demo:** <https://oliverweissl.github.io/RietveldTV/demo.html> (once GitHub Pages is on), or open [`docs/demo.html`](docs/demo.html) locally in any browser. Use the arrow keys or the on-screen remote.
+
 - **No ads, no recommendations, no accounts, no tracking.** It only shows the apps you list.
 - **Flat icons under a spotlight.** Hard-edged rectangles in each app's own colours. The focused app is lit and gets a small yellow end-cut tab, like the painted ends of the Red and Blue Chair; the rest sink into the dark.
 - **Widgets:** local clock and date, extra clocks in other time zones, and weather with a short forecast.
