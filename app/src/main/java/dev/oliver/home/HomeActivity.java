@@ -176,6 +176,7 @@ public class HomeActivity extends Activity {
     @Override
     protected void onNewIntent(Intent i) {
         super.onNewIntent(i);
+        if (editor != null) closeEditor();
         // Home pressed while already home: go back to first tile.
         if (row.getChildCount() > 0) {
             scroller.smoothScrollTo(0, 0);
@@ -226,7 +227,9 @@ public class HomeActivity extends Activity {
     }
 
     // Home screen is the root: swallow Back.
-    @Override public void onBackPressed() { }
+    @Override public void onBackPressed() {
+        if (editor != null) { if (editorDetail) editorMain(0); else closeEditor(); }
+    }
 
     private void populate() {
         PackageManager pm = getPackageManager();
@@ -257,12 +260,15 @@ public class HomeActivity extends Activity {
             if (banner == null) try { banner = ri.activityInfo.applicationInfo.loadBanner(pm); } catch (Exception ignored) { }
             final boolean isBanner = false;
             Drawable icon = hiResIcon(pm, ri);
-            View tile = tile(icon, isBanner, name, () -> launch(pkg));
+            View tile = tile(icon, isBanner, name, pkg, () -> launch(pkg));
             row.addView(tile);
             if (first) { tile.requestFocus(); first = false; }
         }
+        if (config.showWidgetsTile) {
+            row.addView(tile(null, false, "Widgets", "", this::openEditor));
+        }
         if (config.showSettings) {
-            View settings = tile(null, false, "Settings", () -> {
+            View settings = tile(null, false, "Settings", "", () -> {
                 try { startActivity(new Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); }
                 catch (Exception ignored) { }
             });
@@ -347,8 +353,10 @@ public class HomeActivity extends Activity {
         if (i != null) startActivity(i);
     }
 
-    private View tile(Drawable icon, boolean isBanner, final String name, final Runnable action) {
+    private View tile(Drawable icon, boolean isBanner, final String name, final String pkg, final Runnable action) {
         final IconTile g = new IconTile(this, icon, config.iconStyle, name.equals("Widgets") ? "+" : "\u2699");
+        g.pkg = pkg;
+        g.abstractArt = config.rietveldLogos && icon != null;
         g.title = name;
         g.setFocusable(true);
         g.setClickable(true);
@@ -442,7 +450,8 @@ public class HomeActivity extends Activity {
         private final Drawable art;
         private final String style, glyph;
         private final int fw = px(166), fh = px(97), depth = px(28), side = px(8), refl = px(32);
-        String title = "";
+        String title = "", pkg = "";
+        boolean abstractArt;
         private float lit = 0f;
         private Bitmap content;
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -551,6 +560,68 @@ public class HomeActivity extends Activity {
             return out;
         }
 
+        // ---- Rietveld-style stand-ins: a few flat planes on a 100 x 60 grid, no outlines, no gradients.
+        private static final int RED = 0xFFCD1E26, BLUE = 0xFF1E46C8, YELLOW = 0xFFF8C828, WHITE = 0xFFF2F0F0, DARK = 0xFF1A1A1A;
+
+        private void plane(Canvas c, Paint q, float u, float ox, float oy, int color, float... pts) {
+            Path pa = new Path();
+            for (int i = 0; i + 1 < pts.length; i += 2) {
+                float x = ox + pts[i] * u, y = oy + pts[i + 1] * u;
+                if (i == 0) pa.moveTo(x, y); else pa.lineTo(x, y);
+            }
+            pa.close();
+            q.setColor(color);
+            c.drawPath(pa, q);
+        }
+
+        private float[] box(float x1, float y1, float x2, float y2) { return new float[]{x1, y1, x2, y1, x2, y2, x1, y2}; }
+
+        /** Abstract, low-poly interpretation of the app's logo built from primary-colour planes. Unknown apps get a Mondrian-like composition. */
+        private Bitmap renderAbstract() {
+            Bitmap out = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(out);
+            Paint q = new Paint(Paint.ANTI_ALIAS_FLAG);
+            float u = Math.min(fw * 0.74f / 100f, fh * 0.74f / 60f);
+            float ox = (fw - 100f * u) / 2f, oy = (fh - 60f * u) / 2f;
+            switch (pkg) {
+                case "com.netflix.ninja":                          // two bars and a diagonal: an N, red on red
+                    plane(c, q, u, ox, oy, RED, box(30, 4, 40, 56));
+                    plane(c, q, u, ox, oy, RED, box(60, 4, 70, 56));
+                    plane(c, q, u, ox, oy, 0xFF9E1219, 30, 4, 40, 4, 70, 56, 60, 56);
+                    break;
+                case "com.google.android.youtube.tv":              // a red plane and a white wedge
+                    plane(c, q, u, ox, oy, RED, box(16, 8, 84, 52));
+                    plane(c, q, u, ox, oy, WHITE, 42, 18, 42, 42, 64, 30);
+                    break;
+                case "com.apple.atve.androidtv.appletv":           // a screen frame, a stand and one yellow plane
+                    plane(c, q, u, ox, oy, WHITE, box(20, 6, 80, 11));
+                    plane(c, q, u, ox, oy, WHITE, box(20, 37, 80, 42));
+                    plane(c, q, u, ox, oy, WHITE, box(20, 6, 25, 42));
+                    plane(c, q, u, ox, oy, WHITE, box(75, 6, 80, 42));
+                    plane(c, q, u, ox, oy, YELLOW, box(38, 18, 62, 30));
+                    plane(c, q, u, ox, oy, WHITE, box(36, 47, 64, 52));
+                    break;
+                case "com.spotify.tv.android":                     // three slanted bars of falling length
+                    plane(c, q, u, ox, oy, BLUE, 18, 18, 82, 6, 82, 16, 18, 28);
+                    plane(c, q, u, ox, oy, YELLOW, 24, 32, 76, 22, 76, 31, 24, 41);
+                    plane(c, q, u, ox, oy, RED, 31, 45, 69, 38, 69, 46, 31, 53);
+                    break;
+                case "com.google.android.youtube.tvmusic":         // a red diamond and a white wedge
+                    plane(c, q, u, ox, oy, RED, 50, 3, 88, 30, 50, 57, 12, 30);
+                    plane(c, q, u, ox, oy, WHITE, 42, 18, 42, 42, 62, 30);
+                    break;
+                default: {                                          // deterministic Mondrian from the package name
+                    java.util.Random r = new java.util.Random(pkg.hashCode());
+                    int[] pal = {RED, BLUE, YELLOW, WHITE};
+                    float split = 30 + r.nextInt(40);
+                    plane(c, q, u, ox, oy, pal[r.nextInt(4)], box(10, 4, split - 3, 56));
+                    plane(c, q, u, ox, oy, pal[r.nextInt(4)], box(split + 3, 4, 90, 26));
+                    plane(c, q, u, ox, oy, pal[r.nextInt(4)], box(split + 3, 30, 90 - r.nextInt(30), 56));
+                }
+            }
+            return out;
+        }
+
         /**
          * Makes the icon's background transparent. The background colour is read per row from the left/right borders,
          * so flat colours and vertical gradients both work; icons whose borders are not a plain backdrop are left alone.
@@ -574,11 +645,27 @@ public class HomeActivity extends Activity {
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
                     int c = px_[y * w + x];
-                    float a = Math.max(0f, Math.min(1f, (dist(c, rowBg[y]) - 22f) / 70f));
+                    float t = Math.max(0f, Math.min(1f, (dist(c, rowBg[y]) - 30f) / 55f));
+                    float a = t * t * (3f - 2f * t);
                     if (a < 1f) px_[y * w + x] = (Math.round(a * 255) << 24) | (c & 0x00FFFFFF);
                 }
             }
-            b.setPixels(px_, 0, w, 0, 0, w, h);
+            // de-fringe: edge pixels still carry a blend of the old backdrop colour, so take their colour from the
+            // nearest solid logo pixels instead (only the alpha stays soft)
+            int[] out = px_.clone();
+            for (int y = 2; y < h - 2; y++) {
+                for (int x = 2; x < w - 2; x++) {
+                    int c = px_[y * w + x], a = c >>> 24;
+                    if (a == 0 || a == 255) continue;
+                    int sr = 0, sg = 0, sb = 0, n = 0;
+                    for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) {
+                        int cn = px_[(y + dy) * w + x + dx];
+                        if ((cn >>> 24) >= 250) { sr += Color.red(cn); sg += Color.green(cn); sb += Color.blue(cn); n++; }
+                    }
+                    if (n > 0) out[y * w + x] = (a << 24) | ((sr / n) << 16) | ((sg / n) << 8) | (sb / n);
+                }
+            }
+            b.setPixels(out, 0, w, 0, 0, w, h);
         }
 
         private float dist(int a, int b) {
@@ -587,7 +674,7 @@ public class HomeActivity extends Activity {
         }
 
         @Override protected void onDraw(Canvas c) {
-            if (content == null) content = style.equals("plate") && art != null ? renderPlate() : renderGlyph();
+            if (content == null) content = abstractArt ? renderAbstract() : style.equals("plate") && art != null ? renderPlate() : renderGlyph();
             float x0 = (getWidth() - fw) / 2f, y0 = depth, y1 = depth + fh;
             float L = lit;
             // outside the beam the tile sinks into the dark
@@ -601,6 +688,251 @@ public class HomeActivity extends Activity {
             float tx = x0 + (fw - px(30)) / 2f;
             c.drawRect(tx, y1 + px(5), tx + px(30), y1 + px(9), p);
         }
+    }
+
+    // ------------------------------------------------------------------ on-TV widget editor
+    //  Home -> "+ Widgets" tile -> OK.  Up/Down move, Left/Right change a value, OK selects, Back goes up one level.
+    //  Every change is saved to config.json straight away and shown live.
+
+    private FrameLayout editor;                 // non-null while the editor is open
+    private boolean editorDetail;
+    private boolean pendingRemove;
+    private static final String[] POSITIONS = {"top-right", "top-center", "top-left", "bottom-left", "bottom-right"};
+    private static final String[] ZONES = {"", "Europe/London", "Europe/Berlin", "America/New_York", "America/Los_Angeles",
+            "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney", "Pacific/Auckland"};
+    private static final String[] STYLES = {"glyph", "mono", "plate"};
+
+    private interface Cycle { void go(int dir); }
+
+    private static void put(org.json.JSONObject o, String k, Object v) {
+        try { o.put(k, v); } catch (org.json.JSONException ignored) { }
+    }
+
+    private void persist() {
+        config.save(this);
+        buildWidgets();
+        for (Widgets.Widget w : widgets) w.update();
+    }
+
+    private String zoneName(String id) {
+        if (id == null || id.isEmpty()) return "Local";
+        return id.substring(id.lastIndexOf('/') + 1).replace('_', ' ');
+    }
+
+    private int cycleIndex(String[] list, String cur, int dir) {
+        int i = 0;
+        for (int k = 0; k < list.length; k++) if (list[k].equals(cur)) i = k;
+        return (i + dir + list.length) % list.length;
+    }
+
+    private void openEditor() {
+        if (editor != null) return;
+        editor = new FrameLayout(this);
+        editor.setBackgroundColor(0xFF000000);
+        editor.setClickable(true);
+        scroller.setVisibility(View.INVISIBLE);
+        rootView.addView(editor, new FrameLayout.LayoutParams(-1, -1));
+        editorMain(0);
+    }
+
+    private void closeEditor() {
+        if (editor == null) return;
+        rootView.removeView(editor);
+        editor = null;
+        pendingRemove = false;
+        scroller.setVisibility(View.VISIBLE);
+        populate();
+    }
+
+    private View editorRow(String label, String value, Cycle lr, Runnable ok) {
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setFocusable(true);
+        r.setClickable(true);
+        r.setPadding(0, px(9), px(18), px(9));
+        final View bar = new View(this);
+        bar.setBackgroundColor(Color.rgb(248, 200, 40));
+        bar.setVisibility(View.INVISIBLE);
+        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(px(4), px(30));
+        bp.setMarginEnd(px(16));
+        r.addView(bar, bp);
+        final TextView l = text(13, 0x99F2F0F0, plexMono);
+        l.setLetterSpacing(0.14f);
+        l.setText(label);
+        r.addView(l, new LinearLayout.LayoutParams(px(190), -2));
+        final TextView v = text(22, 0xFFF2F0F0, plexLight);
+        v.setText(lr != null ? "\u2039  " + value + "  \u203A" : value);
+        v.setAlpha(0.6f);
+        r.addView(v);
+        r.setOnFocusChangeListener((x, has) -> {
+            bar.setVisibility(has ? View.VISIBLE : View.INVISIBLE);
+            l.setTextColor(has ? 0xFFF2F0F0 : 0x99F2F0F0);
+            v.setAlpha(has ? 1f : 0.6f);
+        });
+        if (lr != null) {
+            r.setOnKeyListener((x, kc, ev) -> {
+                if (ev.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (kc == KeyEvent.KEYCODE_DPAD_LEFT) { lr.go(-1); return true; }
+                if (kc == KeyEvent.KEYCODE_DPAD_RIGHT) { lr.go(1); return true; }
+                return false;
+            });
+        }
+        r.setOnClickListener(x -> {
+            if (ok != null) ok.run(); else if (lr != null) lr.go(1);
+        });
+        return r;
+    }
+
+    /** Clears the overlay and returns the empty list container, with title, rule and key hints in place. */
+    private LinearLayout editorPage(String title) {
+        editor.removeAllViews();
+        TextView t = text(14, 0xB3F2F0F0, plexMono);
+        t.setLetterSpacing(0.1f);
+        t.setText("> " + title);
+        FrameLayout.LayoutParams tp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
+        tp.setMargins(px(56), px(46), 0, 0);
+        editor.addView(t, tp);
+        View rule = new View(this);
+        rule.setBackgroundColor(0x40F2F0F0);
+        FrameLayout.LayoutParams rp = new FrameLayout.LayoutParams(-1, px(1), Gravity.TOP);
+        rp.setMargins(px(56), px(88), px(56), 0);
+        editor.addView(rule, rp);
+        View cap = new View(this);
+        cap.setBackgroundColor(Color.rgb(248, 200, 40));
+        FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(px(22), px(5), Gravity.TOP | Gravity.START);
+        cp.setMargins(px(56), px(86), 0, 0);
+        editor.addView(cap, cp);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        android.widget.ScrollView sv = new android.widget.ScrollView(this);       // long lists scroll with the focus
+        sv.setVerticalScrollBarEnabled(false);
+        sv.addView(list, new ViewGroup.LayoutParams(-1, -2));
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(px(640), px(370), Gravity.TOP | Gravity.START);
+        lp.setMargins(px(56), px(104), 0, 0);
+        editor.addView(sv, lp);
+        TextView hint = text(12, 0x80F2F0F0, plexMono);
+        hint.setLetterSpacing(0.1f);
+        hint.setText("UP/DOWN MOVE    LEFT/RIGHT CHANGE    OK SELECT    BACK " + (editorDetail ? "RETURN" : "CLOSE"));
+        FrameLayout.LayoutParams hp = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.START);
+        hp.setMargins(px(56), 0, 0, px(34));
+        editor.addView(hint, hp);
+        return list;
+    }
+
+    private void focusRow(LinearLayout list, int i) {
+        if (list.getChildCount() == 0) return;
+        list.getChildAt(Math.max(0, Math.min(i, list.getChildCount() - 1))).requestFocus();
+    }
+
+    private String summary(org.json.JSONObject w) {
+        String what = w.optString("type").equals("weather")
+                ? w.optString("name", w.optString("city", "?"))
+                : w.has("timezone") ? zoneName(w.optString("timezone")) : "Local";
+        return what + "  \u00B7  " + w.optString("position", "top-right").toUpperCase(Locale.getDefault());
+    }
+
+    private void editorMain(int focus) {
+        editorDetail = false;
+        pendingRemove = false;
+        LinearLayout list = editorPage("WIDGETS");
+        for (int i = 0; i < config.widgets.size(); i++) {
+            final int wi = i;
+            org.json.JSONObject w = config.widgets.get(i);
+            list.addView(editorRow(w.optString("type").toUpperCase(Locale.getDefault()), summary(w), null, () -> editorDetail(wi, 0)));
+        }
+        list.addView(editorRow("+ ADD CLOCK", "Local or another time zone", null, () -> addWidget("clock")));
+        list.addView(editorRow("+ ADD WEATHER", "Needs a city", null, () -> addWidget("weather")));
+        list.addView(editorRow("TYPING LINE", config.terminal ? "On" : "Off", d -> { config.terminal = !config.terminal; persist(); editorMain(config.widgets.size() + 2); }, null));
+        list.addView(editorRow("ICON STYLE", config.iconStyle, d -> {
+            config.iconStyle = STYLES[cycleIndex(STYLES, config.iconStyle, d)]; config.save(this); editorMain(config.widgets.size() + 3);
+        }, null));
+        list.addView(editorRow("RIETVELD LOGOS", config.rietveldLogos ? "On" : "Off", d -> {
+            config.rietveldLogos = !config.rietveldLogos; config.save(this); editorMain(config.widgets.size() + 4);
+        }, null));
+        list.addView(editorRow("CLOSE", "", null, this::closeEditor));
+        focusRow(list, focus);
+    }
+
+    private void addWidget(String type) {
+        org.json.JSONObject o = new org.json.JSONObject();
+        put(o, "type", type);
+        String pos = POSITIONS[0];
+        for (String cand : POSITIONS) {                       // first anchor nobody uses yet, else top-right
+            boolean used = false;
+            for (org.json.JSONObject w : config.widgets) if (w.optString("position", "top-right").equals(cand)) used = true;
+            if (!used) { pos = cand; break; }
+        }
+        put(o, "position", pos);
+        if (type.equals("clock")) { put(o, "timezone", "Europe/London"); put(o, "label", "London"); }
+        else put(o, "days", 3);
+        config.widgets.add(o);
+        persist();
+        int wi = config.widgets.size() - 1;
+        editorDetail(wi, 0);
+        if (type.equals("weather")) cityDialog(wi, true);
+    }
+
+    private void editorDetail(final int wi, int focus) {
+        editorDetail = true;
+        final org.json.JSONObject w = config.widgets.get(wi);
+        final boolean clock = w.optString("type").equals("clock");
+        LinearLayout list = editorPage((clock ? "CLOCK" : "WEATHER") + "  \u00B7  " + summary(w));
+        list.addView(editorRow("POSITION", w.optString("position", "top-right").toUpperCase(Locale.getDefault()), d -> {
+            put(w, "position", POSITIONS[cycleIndex(POSITIONS, w.optString("position", "top-right"), d)]); persist(); editorDetail(wi, 0);
+        }, null));
+        if (clock) {
+            list.addView(editorRow("TIME ZONE", zoneName(w.optString("timezone", "")).toUpperCase(Locale.getDefault()), d -> {
+                String z = ZONES[cycleIndex(ZONES, w.optString("timezone", ""), d)];
+                if (z.isEmpty()) { w.remove("timezone"); w.remove("label"); } else { put(w, "timezone", z); put(w, "label", zoneName(z)); }
+                persist(); editorDetail(wi, 1);
+            }, null));
+            list.addView(editorRow("24 HOUR", w.optBoolean("hour24", true) ? "On" : "Off", d -> {
+                put(w, "hour24", !w.optBoolean("hour24", true)); persist(); editorDetail(wi, 2);
+            }, null));
+        } else {
+            list.addView(editorRow("CITY", w.optString("city", w.has("latitude") ? "(coordinates)" : "?"), null, () -> cityDialog(wi, false)));
+            list.addView(editorRow("UNITS", w.optString("units", "celsius"), d -> {
+                put(w, "units", w.optString("units", "celsius").equals("celsius") ? "fahrenheit" : "celsius"); persist(); editorDetail(wi, 2);
+            }, null));
+            list.addView(editorRow("FORECAST DAYS", String.valueOf(w.optInt("days", 3)), d -> {
+                put(w, "days", (w.optInt("days", 3) + d + 6) % 6); persist(); editorDetail(wi, 3);
+            }, null));
+        }
+        int n = list.getChildCount();
+        list.addView(editorRow("REMOVE", pendingRemove ? "Press OK again" : "", null, () -> {
+            if (!pendingRemove) { pendingRemove = true; editorDetail(wi, n); return; }
+            config.widgets.remove(wi); persist(); editorMain(0);
+        }));
+        list.addView(editorRow("BACK", "", null, () -> editorMain(wi)));
+        focusRow(list, focus);
+    }
+
+    /** City prompt (uses the TV's on-screen keyboard). The forecast looks the city up itself. */
+    private void cityDialog(final int wi, final boolean removeOnCancel) {
+        final org.json.JSONObject w = config.widgets.get(wi);
+        final android.widget.EditText et = new android.widget.EditText(this);
+        et.setSingleLine(true);
+        et.setText(w.optString("city", ""));
+        et.setHint("City, e.g. Berlin");
+        et.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Weather for which city?")
+                .setView(et)
+                .setPositiveButton("OK", (d, b) -> {
+                    String city = et.getText().toString().trim();
+                    if (!city.isEmpty()) {
+                        w.remove("latitude"); w.remove("longitude"); w.remove("name");
+                        put(w, "city", city);
+                        persist();
+                        editorDetail(wi, 1);
+                    } else if (removeOnCancel) { config.widgets.remove(wi); persist(); editorMain(0); }
+                })
+                .setNegativeButton("Cancel", (d, b) -> {
+                    if (removeOnCancel) { config.widgets.remove(wi); persist(); editorMain(0); }
+                })
+                .setOnCancelListener(d -> { if (removeOnCancel) { config.widgets.remove(wi); persist(); editorMain(0); } })
+                .show();
     }
 
     private Drawable rounded(int color, int radius) {

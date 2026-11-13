@@ -32,6 +32,10 @@ final class Config {
     boolean terminal = true;
     /** "glyph" (default): logo only, no background plate; "mono": themed single-colour icon if the app has one; "plate": whole icon. */
     String iconStyle = "glyph";
+    /** The "+ Widgets" tile that opens the on-TV widget editor. */
+    boolean showWidgetsTile = true;
+    /** Replace company logos with abstract, low-poly Rietveld-style compositions (red/blue/yellow/white planes). */
+    boolean rietveldLogos = false;
 
     static Config load(Context c) {
         String json = null;
@@ -51,6 +55,30 @@ final class Config {
         return cfg != null ? cfg : new Config();
     }
 
+    /** Writes the current settings to the external files dir (the same file load() reads first). */
+    void save(Context c) {
+        try {
+            JSONObject o = new JSONObject();
+            o.put("apps", new JSONArray(apps));
+            o.put("showSettings", showSettings);
+            o.put("showWidgetsTile", showWidgetsTile);
+            o.put("terminal", terminal);
+            o.put("iconStyle", iconStyle);
+            o.put("rietveldLogos", rietveldLogos);
+            JSONArray ws = new JSONArray();
+            for (JSONObject w : widgets) ws.put(w);
+            o.put("widgets", ws);
+            File ext = c.getExternalFilesDir(null);
+            if (ext == null) return;
+            ext.mkdirs();
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(new File(ext, "config.json"))) {
+                out.write(o.toString(2).getBytes("UTF-8"));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "could not save config.json", e);
+        }
+    }
+
     private static Config parse(String json) {
         if (json == null) return null;
         try {
@@ -63,6 +91,8 @@ final class Config {
             cfg.showSettings = o.optBoolean("showSettings", true);
             cfg.terminal = o.optBoolean("terminal", true);
             cfg.iconStyle = o.optString("iconStyle", "glyph");
+            cfg.showWidgetsTile = o.optBoolean("showWidgetsTile", true);
+            cfg.rietveldLogos = o.optBoolean("rietveldLogos", false);
             return cfg;
         } catch (Exception e) {
             Log.w(TAG, "config.json is not valid JSON, falling back to the default", e);
