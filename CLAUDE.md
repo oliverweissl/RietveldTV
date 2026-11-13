@@ -6,7 +6,7 @@ Android TV launcher. Plain Android Views + Canvas, no AndroidX, no dependencies.
 - `app/src/main/java/dev/oliver/home/HomeActivity.java`: the screen. `SceneView` (spotlight/floor light, per-pixel bitmap), `IconTile` (one flat icon), `dial()` (focus/scale/dim by distance from centre), `populate()` (apps from config).
 - `Widgets.java`: widget types (`clock`, `weather`). Add new ones by subclassing `Widget` and registering in `create`. Placement (`position`) is handled by `HomeActivity.buildWidgets`; `Style.gravity` sets text alignment per anchor.
 - On-TV widget editor: `openEditor`/`editorMain`/`editorDetail` in `HomeActivity.java` (overlay of focusable rows; every change calls `persist()` which saves `config.json` and rebuilds the widgets). Keep it in sync with `docs/demo.html`, which mimics it.
-- `IconTile.renderAbstract`: the optional Rietveld-style logo stand-ins (planes on a 100x60 grid per package; Mondrian fallback).
+- `IconTile.renderAbstract`: the optional Rietveld-style logo stand-ins: full Mondrian tiles, only red/blue/yellow planes with black gaps, on a 100x60 grid per package (Mondrian fallback from the package name).
 - `Config.java`: loads `config.json` from `/sdcard/Android/data/dev.oliver.home/files/`, falling back to `assets/config.default.json`.
 - `scripts/`: `install.sh`, `push-config.sh`, `restore.sh`. `docs/`: README assets, GitHub Pages site, guides.
 

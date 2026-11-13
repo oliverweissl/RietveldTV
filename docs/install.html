@@ -30,14 +30,24 @@
   .meta { display:flex; gap:26px; flex-wrap:wrap; font:400 13px "IBM Plex Mono", monospace; letter-spacing:.06em; color:var(--dim); }
   .meta b { color:var(--fg); font-weight:400; }
   ul.req { list-style:none; padding:0; margin:20px 0 0; }
-  ul.req > li { border-top:1px solid var(--line); padding:14px 0 14px 44px; position:relative; }
+  ul.req > li { border-top:1px solid var(--line); padding:14px 0 14px 44px; position:relative; cursor:pointer; }
   ul.req > li::before { content:""; position:absolute; left:2px; top:20px; width:16px; height:16px; border:2px solid var(--fg); }
+  .js ul.req > li::before { display:none; }
+  input.tick { -webkit-appearance:none; appearance:none; position:absolute; margin:0; width:20px; height:20px; border:2px solid var(--fg); background:transparent; cursor:pointer; }
+  input.tick:checked { background:var(--yellow); border-color:var(--yellow); }
+  input.tick:checked::after { content:""; position:absolute; left:5px; top:1px; width:5px; height:10px; border:solid #000; border-width:0 2px 2px 0; transform:rotate(45deg); }
+  ul.req input.tick { left:0; top:18px; }
+  ol.steps input.tick { left:0; top:58px; width:18px; height:18px; }
+  ol.steps input.tick:checked::after { left:4px; top:0; }
+  li.done > strong, li.done > h3 { opacity:.5; text-decoration:line-through; text-decoration-thickness:1px; }
+  li.done > span { opacity:.5; }
+  .progress { font:400 13px "IBM Plex Mono", monospace; letter-spacing:.08em; color:var(--dim); margin:14px 0 0; }
+  .progress b { color:var(--yellow); font-weight:400; }
   ul.req strong { font-weight:500; display:block; }
   ul.req span { color:var(--dim); font-size:16px; }
   ol.steps { padding:0; list-style:none; counter-reset:s; margin:0; }
   ol.steps > li { counter-increment:s; border-top:1px solid var(--line); padding:26px 0 26px 64px; position:relative; }
   ol.steps > li::before { content:counter(s, decimal-leading-zero); position:absolute; left:0; top:26px; font:400 15px "IBM Plex Mono", monospace; color:var(--dim); }
-  ol.steps > li.done-able::after { content:""; position:absolute; left:34px; top:31px; width:7px; height:7px; background:var(--yellow); }
   h3 { font-weight:500; font-size:20px; margin:0 0 8px; }
   p { margin:8px 0; }
   .note { border-left:3px solid var(--blue); padding:4px 0 4px 14px; color:var(--dim); font-size:16px; margin:12px 0; }
@@ -78,7 +88,8 @@
   <div class="rule"></div>
   <p class="kicker">Before you start</p>
   <h2>Requirements</h2>
-  <p>Tick these off first. If something is missing, the step that fixes it is linked.</p>
+  <p>Tick these off first (click a line). If something is missing, the step that fixes it is linked.</p>
+  <p class="progress" id="reqProgress" aria-live="polite"></p>
   <ul class="req">
     <li><strong>An Android TV or Google TV</strong><span>Android 8.0 or newer (check: Settings → Device Preferences → About → Android TV OS version). Sony, Philips, TCL, Xiaomi, Chromecast with Google TV, NVIDIA Shield and most others work. Amazon Fire TV is not supported.</span></li>
     <li><strong>The TV remote</strong><span>You will use it for a few menu steps and to try the result.</span></li>
@@ -189,6 +200,35 @@ adb uninstall dev.oliver.home</pre>
 </main>
 <script>
   document.body.classList.remove('nojs');
+  document.body.classList.add('js');
+  // tick lists: real checkboxes, remembered in this browser (storage may be unavailable, so everything works without it)
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+  function makeTicks(items, prefix, onChange) {
+    items.forEach(function (li, i) {
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'tick'; cb.id = prefix + i;
+      var title = li.querySelector('strong, h3');
+      cb.setAttribute('aria-label', title ? title.textContent : 'done');
+      cb.checked = store(prefix + i) === '1';
+      li.classList.toggle('done', cb.checked);
+      cb.addEventListener('change', function () {
+        li.classList.toggle('done', cb.checked); store(prefix + i, cb.checked ? '1' : '0'); onChange();
+      });
+      li.insertBefore(cb, li.firstChild);
+      if (prefix === 'req') li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.closest('a')) return;
+        cb.checked = !cb.checked; cb.dispatchEvent(new Event('change'));
+      });
+    });
+  }
+  var reqs = Array.prototype.slice.call(document.querySelectorAll('ul.req > li'));
+  function reqProgress() {
+    var n = reqs.filter(function (li) { return li.querySelector('input.tick').checked; }).length;
+    document.getElementById('reqProgress').innerHTML = n === reqs.length ? '<b>' + n + ' of ' + reqs.length + '</b> ready. Start with step 1.' : '<b>' + n + ' of ' + reqs.length + '</b> ready';
+  }
+  makeTicks(reqs, 'req', reqProgress);
+  makeTicks(Array.prototype.slice.call(document.querySelectorAll('ol.steps > li')), 'step', function () {});
+  reqProgress();
   // OS tabs: pick the visitor's OS by default
   var ua = navigator.userAgent || '';
   var guess = /Win/i.test(ua) ? 'win' : /Mac/i.test(ua) ? 'mac' : 'linux';

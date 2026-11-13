@@ -9,7 +9,7 @@ Black room, one spotlight, flat rectangular app icons, a few quiet widgets. Insp
 
 - **No ads, no recommendations, no accounts, no tracking.** It only shows the apps you list.
 - **Flat icons under a spotlight.** Hard-edged rectangles in each app's own colours. The focused app is lit and gets a small yellow end-cut tab, like the painted ends of the Red and Blue Chair; the rest sink into the dark.
-- **Logo-only icons.** No background plates: each app is just its logo on the black. Optionally swap the company logos for abstract, low-poly Rietveld-style compositions (switch in the widget editor).
+- **Logo-only icons.** No background plates: each app is just its logo on the black. Optionally swap the company logos for abstract Mondrian-style tiles in red, blue and yellow that hint at the original (switch in the widget editor).
 - **Widgets, added on the TV itself:** local clock and date, extra clocks in other time zones, and weather with a short forecast. Home → **+ Widgets**, no computer needed (see below).
 - **Configured with one JSON file.** Edit it by hand or [let Claude do it](docs/CUSTOMIZE-WITH-CLAUDE.md).
 - **No network access unless you add a weather widget.** No analytics, no third-party SDKs.

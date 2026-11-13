@@ -213,7 +213,9 @@ public class HomeActivity extends Activity {
                 host.setOrientation(LinearLayout.HORIZONTAL);
                 FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(-2, -2, fg);
                 lp.setMargins(px(ms), px(mt), px(me), px(mb));
-                rootView.addView(host, lp);
+                // keep the widgets underneath the editor overlay (it is the topmost child while open)
+                if (editor != null) rootView.addView(host, rootView.indexOfChild(editor), lp);
+                else rootView.addView(host, lp);
                 widgetHosts.add(host);
                 hosts.put(pos, host);
             }
@@ -560,14 +562,14 @@ public class HomeActivity extends Activity {
             return out;
         }
 
-        // ---- Rietveld-style stand-ins: a few flat planes on a 100 x 60 grid, no outlines, no gradients.
-        private static final int RED = 0xFFCD1E26, BLUE = 0xFF1E46C8, YELLOW = 0xFFF8C828, WHITE = 0xFFF2F0F0, DARK = 0xFF1A1A1A;
+        // ---- Rietveld-style stand-ins: a full Mondrian tile of flat red / blue / yellow planes with black gaps between them,
+        // arranged to hint at the original logo. Coordinates are on a 100 x 60 grid that fills the whole tile.
+        private static final int RED = 0xFFCD1E26, BLUE = 0xFF1E46C8, YELLOW = 0xFFF8C828;
 
-        private void plane(Canvas c, Paint q, float u, float ox, float oy, int color, float... pts) {
+        private void plane(Canvas c, Paint q, float sx, float sy, int color, float... pts) {
             Path pa = new Path();
             for (int i = 0; i + 1 < pts.length; i += 2) {
-                float x = ox + pts[i] * u, y = oy + pts[i + 1] * u;
-                if (i == 0) pa.moveTo(x, y); else pa.lineTo(x, y);
+                if (i == 0) pa.moveTo(pts[i] * sx, pts[i + 1] * sy); else pa.lineTo(pts[i] * sx, pts[i + 1] * sy);
             }
             pa.close();
             q.setColor(color);
@@ -576,47 +578,46 @@ public class HomeActivity extends Activity {
 
         private float[] box(float x1, float y1, float x2, float y2) { return new float[]{x1, y1, x2, y1, x2, y2, x1, y2}; }
 
-        /** Abstract, low-poly interpretation of the app's logo built from primary-colour planes. Unknown apps get a Mondrian-like composition. */
         private Bitmap renderAbstract() {
             Bitmap out = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(out);
             Paint q = new Paint(Paint.ANTI_ALIAS_FLAG);
-            float u = Math.min(fw * 0.74f / 100f, fh * 0.74f / 60f);
-            float ox = (fw - 100f * u) / 2f, oy = (fh - 60f * u) / 2f;
+            float sx = fw / 100f, sy = fh / 60f;
             switch (pkg) {
-                case "com.netflix.ninja":                          // two bars and a diagonal: an N, red on red
-                    plane(c, q, u, ox, oy, RED, box(30, 4, 40, 56));
-                    plane(c, q, u, ox, oy, RED, box(60, 4, 70, 56));
-                    plane(c, q, u, ox, oy, 0xFF9E1219, 30, 4, 40, 4, 70, 56, 60, 56);
+                case "com.netflix.ninja":                          // N: two red bars joined by a yellow diagonal
+                    plane(c, q, sx, sy, RED, box(0, 0, 30, 60));
+                    plane(c, q, sx, sy, RED, box(70, 0, 100, 60));
+                    plane(c, q, sx, sy, YELLOW, 32, 0, 52, 0, 68, 60, 48, 60);
                     break;
-                case "com.google.android.youtube.tv":              // a red plane and a white wedge
-                    plane(c, q, u, ox, oy, RED, box(16, 8, 84, 52));
-                    plane(c, q, u, ox, oy, WHITE, 42, 18, 42, 42, 64, 30);
+                case "com.google.android.youtube.tv":              // a red screen with a yellow play wedge, blue edge
+                    plane(c, q, sx, sy, RED, box(0, 0, 82, 60));
+                    plane(c, q, sx, sy, BLUE, box(84, 0, 100, 60));
+                    plane(c, q, sx, sy, YELLOW, 28, 13, 28, 47, 56, 30);
                     break;
-                case "com.apple.atve.androidtv.appletv":           // a screen frame, a stand and one yellow plane
-                    plane(c, q, u, ox, oy, WHITE, box(20, 6, 80, 11));
-                    plane(c, q, u, ox, oy, WHITE, box(20, 37, 80, 42));
-                    plane(c, q, u, ox, oy, WHITE, box(20, 6, 25, 42));
-                    plane(c, q, u, ox, oy, WHITE, box(75, 6, 80, 42));
-                    plane(c, q, u, ox, oy, YELLOW, box(38, 18, 62, 30));
-                    plane(c, q, u, ox, oy, WHITE, box(36, 47, 64, 52));
+                case "com.apple.atve.androidtv.appletv":           // a blue screen with a yellow plane, red stand
+                    plane(c, q, sx, sy, BLUE, box(0, 0, 100, 44));
+                    plane(c, q, sx, sy, YELLOW, box(38, 10, 62, 34));
+                    plane(c, q, sx, sy, RED, box(30, 47, 70, 60));
                     break;
-                case "com.spotify.tv.android":                     // three slanted bars of falling length
-                    plane(c, q, u, ox, oy, BLUE, 18, 18, 82, 6, 82, 16, 18, 28);
-                    plane(c, q, u, ox, oy, YELLOW, 24, 32, 76, 22, 76, 31, 24, 41);
-                    plane(c, q, u, ox, oy, RED, 31, 45, 69, 38, 69, 46, 31, 53);
+                case "com.spotify.tv.android":                     // three bars of falling length
+                    plane(c, q, sx, sy, BLUE, box(0, 0, 100, 18));
+                    plane(c, q, sx, sy, YELLOW, box(0, 21, 78, 39));
+                    plane(c, q, sx, sy, RED, box(0, 42, 56, 60));
                     break;
-                case "com.google.android.youtube.tvmusic":         // a red diamond and a white wedge
-                    plane(c, q, u, ox, oy, RED, 50, 3, 88, 30, 50, 57, 12, 30);
-                    plane(c, q, u, ox, oy, WHITE, 42, 18, 42, 42, 62, 30);
+                case "com.google.android.youtube.tvmusic":         // a red diamond with a yellow wedge on blue, yellow edge
+                    plane(c, q, sx, sy, YELLOW, box(0, 0, 24, 60));
+                    plane(c, q, sx, sy, BLUE, box(26, 0, 100, 60));
+                    plane(c, q, sx, sy, RED, 63, 5, 92, 30, 63, 55, 34, 30);
+                    plane(c, q, sx, sy, YELLOW, 55, 21, 55, 39, 71, 30);
                     break;
-                default: {                                          // deterministic Mondrian from the package name
+                default: {                                          // any other app: a deterministic Mondrian from its package name
                     java.util.Random r = new java.util.Random(pkg.hashCode());
-                    int[] pal = {RED, BLUE, YELLOW, WHITE};
-                    float split = 30 + r.nextInt(40);
-                    plane(c, q, u, ox, oy, pal[r.nextInt(4)], box(10, 4, split - 3, 56));
-                    plane(c, q, u, ox, oy, pal[r.nextInt(4)], box(split + 3, 4, 90, 26));
-                    plane(c, q, u, ox, oy, pal[r.nextInt(4)], box(split + 3, 30, 90 - r.nextInt(30), 56));
+                    int[] pal = {RED, BLUE, YELLOW};
+                    int a = r.nextInt(3), b = (a + 1 + r.nextInt(2)) % 3, d = 3 - a - b;
+                    float split = 34 + r.nextInt(32), row = 18 + r.nextInt(24);
+                    plane(c, q, sx, sy, pal[a], box(0, 0, split - 1, 60));
+                    plane(c, q, sx, sy, pal[b], box(split + 1, 0, 100, row - 1));
+                    plane(c, q, sx, sy, pal[d], box(split + 1, row + 1, 100 - r.nextInt(24), 60));
                 }
             }
             return out;
