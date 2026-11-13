@@ -578,46 +578,68 @@ public class HomeActivity extends Activity {
 
         private float[] box(float x1, float y1, float x2, float y2) { return new float[]{x1, y1, x2, y1, x2, y2, x1, y2}; }
 
+        private static final int PAPER = 0xFF202226;      // the "empty" cells: dark neutral, where Mondrian would use white
+        private static final float LINE = 2.6f;           // black line width in grid units, identical everywhere
+
+        /** A cell between grid lines. Edges that touch the tile border stay flush, interior edges leave half a line each. */
+        private void cell(Canvas c, Paint q, float sx, float sy, int color, float x1, float y1, float x2, float y2) {
+            float h = LINE / 2f;
+            float a = x1 <= 0 ? 0 : x1 + h, b = y1 <= 0 ? 0 : y1 + h, d = x2 >= 100 ? 100 : x2 - h, e = y2 >= 60 ? 60 : y2 - h;
+            q.setColor(color);
+            c.drawRect(a * sx, b * sy, d * sx, e * sy, q);
+        }
+
+        /**
+         * Each stand-in is one Mondrian panel: the whole tile is tiled on a shared grid with equal black lines, one plane
+         * dominates, the rest is red / blue / yellow or dark paper. The hint of the original lives inside a single cell.
+         */
         private Bitmap renderAbstract() {
             Bitmap out = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(out);
             Paint q = new Paint(Paint.ANTI_ALIAS_FLAG);
             float sx = fw / 100f, sy = fh / 60f;
             switch (pkg) {
-                case "com.netflix.ninja":                          // N: two red bars joined by a yellow diagonal
-                    plane(c, q, sx, sy, RED, box(0, 0, 30, 60));
-                    plane(c, q, sx, sy, RED, box(70, 0, 100, 60));
-                    plane(c, q, sx, sy, YELLOW, 32, 0, 52, 0, 68, 60, 48, 60);
+                case "com.netflix.ninja":                          // two red bars with a yellow diagonal between them: an N
+                    cell(c, q, sx, sy, RED, 0, 0, 32, 60);
+                    cell(c, q, sx, sy, PAPER, 32, 0, 68, 60);
+                    cell(c, q, sx, sy, RED, 68, 0, 100, 60);
+                    plane(c, q, sx, sy, YELLOW, 34.3f, 0, 52.5f, 0, 65.7f, 60, 47.5f, 60);
                     break;
-                case "com.google.android.youtube.tv":              // a red screen with a yellow play wedge, blue edge
-                    plane(c, q, sx, sy, RED, box(0, 0, 82, 60));
-                    plane(c, q, sx, sy, BLUE, box(84, 0, 100, 60));
-                    plane(c, q, sx, sy, YELLOW, 28, 13, 28, 47, 56, 30);
+                case "com.google.android.youtube.tv":              // a big red screen with a yellow play wedge
+                    cell(c, q, sx, sy, RED, 0, 0, 72, 60);
+                    cell(c, q, sx, sy, BLUE, 72, 0, 100, 36);
+                    cell(c, q, sx, sy, YELLOW, 72, 36, 100, 60);
+                    plane(c, q, sx, sy, YELLOW, 27, 13, 27, 47, 52, 30);
                     break;
-                case "com.apple.atve.androidtv.appletv":           // a blue screen with a yellow plane, red stand
-                    plane(c, q, sx, sy, BLUE, box(0, 0, 100, 44));
-                    plane(c, q, sx, sy, YELLOW, box(38, 10, 62, 34));
-                    plane(c, q, sx, sy, RED, box(30, 47, 70, 60));
+                case "com.apple.atve.androidtv.appletv":           // a blue screen holding a yellow square, on a red stand
+                    cell(c, q, sx, sy, BLUE, 0, 0, 100, 42);
+                    cell(c, q, sx, sy, PAPER, 0, 42, 34, 60);
+                    cell(c, q, sx, sy, RED, 34, 42, 66, 60);
+                    cell(c, q, sx, sy, PAPER, 66, 42, 100, 60);
+                    cell(c, q, sx, sy, YELLOW, 38, 10, 62, 32);
                     break;
                 case "com.spotify.tv.android":                     // three bars of falling length
-                    plane(c, q, sx, sy, BLUE, box(0, 0, 100, 18));
-                    plane(c, q, sx, sy, YELLOW, box(0, 21, 78, 39));
-                    plane(c, q, sx, sy, RED, box(0, 42, 56, 60));
+                    cell(c, q, sx, sy, BLUE, 0, 0, 100, 20);
+                    cell(c, q, sx, sy, YELLOW, 0, 20, 76, 40);
+                    cell(c, q, sx, sy, PAPER, 76, 20, 100, 40);
+                    cell(c, q, sx, sy, RED, 0, 40, 52, 60);
+                    cell(c, q, sx, sy, PAPER, 52, 40, 100, 60);
                     break;
-                case "com.google.android.youtube.tvmusic":         // a red diamond with a yellow wedge on blue, yellow edge
-                    plane(c, q, sx, sy, YELLOW, box(0, 0, 24, 60));
-                    plane(c, q, sx, sy, BLUE, box(26, 0, 100, 60));
-                    plane(c, q, sx, sy, RED, 63, 5, 92, 30, 63, 55, 34, 30);
-                    plane(c, q, sx, sy, YELLOW, 55, 21, 55, 39, 71, 30);
+                case "com.google.android.youtube.tvmusic":         // a red diamond with a yellow wedge, on blue, beside a yellow strip
+                    cell(c, q, sx, sy, YELLOW, 0, 0, 24, 60);
+                    cell(c, q, sx, sy, BLUE, 24, 0, 100, 60);
+                    plane(c, q, sx, sy, RED, 62, 5, 90, 30, 62, 55, 34, 30);
+                    plane(c, q, sx, sy, YELLOW, 55, 22, 55, 38, 69, 30);
                     break;
-                default: {                                          // any other app: a deterministic Mondrian from its package name
+                default: {                                          // any other app: a deterministic panel from its package name
                     java.util.Random r = new java.util.Random(pkg.hashCode());
                     int[] pal = {RED, BLUE, YELLOW};
                     int a = r.nextInt(3), b = (a + 1 + r.nextInt(2)) % 3, d = 3 - a - b;
-                    float split = 34 + r.nextInt(32), row = 18 + r.nextInt(24);
-                    plane(c, q, sx, sy, pal[a], box(0, 0, split - 1, 60));
-                    plane(c, q, sx, sy, pal[b], box(split + 1, 0, 100, row - 1));
-                    plane(c, q, sx, sy, pal[d], box(split + 1, row + 1, 100 - r.nextInt(24), 60));
+                    float vx = 36 + r.nextInt(24), hy = 20 + r.nextInt(20);
+                    cell(c, q, sx, sy, pal[a], 0, 0, vx, 60);
+                    cell(c, q, sx, sy, pal[b], vx, 0, 100, hy);
+                    cell(c, q, sx, sy, PAPER, vx, hy, 100 - 24, 60);
+                    cell(c, q, sx, sy, pal[d], 100 - 24, hy, 100, 60);
                 }
             }
             return out;
