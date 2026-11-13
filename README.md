@@ -9,12 +9,15 @@ Black room, one spotlight, flat rectangular app icons, a few quiet widgets. Insp
 
 - **No ads, no recommendations, no accounts, no tracking.** It only shows the apps you list.
 - **Flat icons under a spotlight.** Hard-edged rectangles in each app's own colours. The focused app is lit and gets a small yellow end-cut tab, like the painted ends of the Red and Blue Chair; the rest sink into the dark.
-- **Widgets:** local clock and date, extra clocks in other time zones, and weather with a short forecast.
+- **Logo-only icons.** No background plates: each app is just its logo on the black. Optionally swap the company logos for abstract, low-poly Rietveld-style compositions (switch in the widget editor).
+- **Widgets, added on the TV itself:** local clock and date, extra clocks in other time zones, and weather with a short forecast. Home → **+ Widgets**, no computer needed (see below).
 - **Configured with one JSON file.** Edit it by hand or [let Claude do it](docs/CUSTOMIZE-WITH-CLAUDE.md).
 - **No network access unless you add a weather widget.** No analytics, no third-party SDKs.
 
 
 ## Install
+
+**Step-by-step guide with requirements: [install page](docs/install.html)** (also at <https://oliverweissl.github.io/RietveldTV/install.html> once GitHub Pages is on). The short version:
 
 You need an Android TV / Google TV on the same Wi-Fi as your computer, and `adb` (`sudo apt install android-tools-adb`, or [platform-tools](https://developer.android.com/tools/releases/platform-tools)).
 
@@ -26,6 +29,17 @@ You need an Android TV / Google TV on the same Wi-Fi as your computer, and `adb`
    scripts/install.sh 192.168.1.50 RietveldTV.apk
    ```
    Accept the "Allow debugging?" prompt on the TV the first time. Then press **Home** on the remote.
+
+## Add widgets on the TV
+
+Press Home, move to the **+ Widgets** tile (after your apps) and press OK. Use the remote:
+
+- **Up / Down** move, **Left / Right** change a value, **OK** selects, **Back** goes up one level.
+- **+ Add clock** (pick a time zone) or **+ Add weather** (type a city with the on-screen keyboard).
+- Open a widget to change its **position** (five anchors), time zone, city, units or forecast days, or to remove it.
+- Also here: **Typing line** on/off, **Icon style** (`glyph` logo only, `mono` themed one-colour icon, `plate` whole icon) and **Rietveld logos** on/off.
+
+Every change is saved immediately to `config.json` on the TV. You can try the same editor in the [browser demo](docs/demo.html).
 
 ## Configure
 
@@ -51,6 +65,9 @@ scripts/push-config.sh 192.168.1.50 config.json
 | --- | --- |
 | `apps` | Package names, in display order. Only installed apps appear. Find a package with `adb shell pm list packages \| grep -i netflix`. |
 | `showSettings` | Show the Settings tile at the end of the row. |
+| `showWidgetsTile` | Show the **+ Widgets** tile that opens the on-TV editor (default `true`). |
+| `iconStyle` | `glyph` (logo only, default), `mono` (themed one-colour icon, Android 13+), `plate` (whole icon). |
+| `rietveldLogos` | `true` swaps the company logos for abstract Rietveld-style compositions (default `false`). |
 | `terminal` | The small typing line "> 5 apps ready" at the top-left (default `true`). It hides itself when a widget is placed top-left. |
 | `widgets` | Any number of widgets, each with a `type` and an optional `position`. Types below. |
 

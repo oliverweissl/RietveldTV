@@ -15,6 +15,8 @@ Claude reads [`CLAUDE.md`](../CLAUDE.md) in the repo root, which explains the pr
 
 ## 1. Change *what* is shown (config only, no code)
 
+You can also do most of this on the TV itself: Home → **+ Widgets** (add clocks and weather, move them, icon style, Rietveld logos). The prompts below are for when you want Claude to do it, or to do something the editor cannot.
+
 Everything in [`config.json`](config.example.json) is safe to change by asking:
 
 > Replace Spotify with Disney+ and put Netflix last.
