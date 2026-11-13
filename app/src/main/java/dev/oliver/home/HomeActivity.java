@@ -146,7 +146,7 @@ public class HomeActivity extends Activity {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setClipChildren(false);
-        row.setPadding(px(346), px(38), px(346), px(6));
+        row.setPadding(px(356), px(30), px(356), px(6));
         scroller.addView(row, new ViewGroup.LayoutParams(-2, -2));
         FrameLayout.LayoutParams sp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         sp.setMargins(0, 0, 0, px(56));
@@ -284,7 +284,7 @@ public class HomeActivity extends Activity {
         float mid = scroller.getScrollX() + sw / 2f;
         for (int i = 0; i < row.getChildCount(); i++) {
             View c = row.getChildAt(i);
-            float d = (c.getLeft() + c.getWidth() / 2f - mid) / (c.getWidth() * 1.55f);
+            float d = (c.getLeft() + c.getWidth() / 2f - mid) / (c.getWidth() * 1.95f);
             d = Math.max(-1.6f, Math.min(1.6f, d));
             float a = Math.abs(d);
             c.setPivotX(c.getWidth() / 2f);
@@ -326,7 +326,7 @@ public class HomeActivity extends Activity {
         g.setFocusable(true);
         g.setClickable(true);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(g.totalW(), g.totalH());
-        lp.setMargins(px(26), 0, px(26), 0);
+        lp.setMargins(px(40), 0, px(40), 0);
         g.setLayoutParams(lp);
         g.setOnFocusChangeListener((v, has) -> {
             if (has) {
@@ -403,13 +403,19 @@ public class HomeActivity extends Activity {
         }
     }
 
-    /** One app as a single Liquid-Glass style icon: the art fills the glass, the glyph floats inside it, light lives on the rim. */
+    /**
+     * One app as a single Liquid-Glass style icon, built the way the usual shader recipes do it:
+     * the icon is a rounded-rectangle distance field; near the rim the picture is bent along the surface
+     * normal (refraction, with a slight R/G/B split), and the rim catches light from the slope of the bevel
+     * (specular + fresnel). Everything is computed once per icon into two bitmaps.
+     */
     private class GlassBox extends View {
         private final Drawable art;
-        private final int fw = px(216), fh = px(126), depth = px(34), side = px(8), refl = px(36);
+        private final int fw = px(151), fh = px(88), depth = px(26), side = px(8), refl = px(30);
         String title = "";
         private float lit = 0f, dir = 0f;
-        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private Bitmap refr, spec;
+        private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
         GlassBox(android.content.Context c, Drawable art, boolean banner) {
             super(c);
@@ -426,133 +432,166 @@ public class HomeActivity extends Activity {
             }
         }
 
-        private int w(float a) { return Color.argb(Math.max(0, Math.min(255, Math.round(a))), 255, 255, 255); }
         private int k(float a) { return Color.argb(Math.max(0, Math.min(255, Math.round(a))), 0, 0, 0); }
+        private int w(float a) { return Color.argb(Math.max(0, Math.min(255, Math.round(a))), 255, 255, 255); }
+
+        /** The flat artwork the glass sits on: dark base, app icon filling the rectangle, glyph floating on a soft shadow. */
+        private Bitmap renderContent() {
+            Bitmap b = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(b);
+            RectF r = new RectF(0, 0, fw, fh);
+            p.setShader(new android.graphics.LinearGradient(0, 0, 0, fh, Color.rgb(46, 48, 52), Color.rgb(16, 17, 19), Shader.TileMode.CLAMP));
+            c.drawRect(r, p);
+            p.setShader(null);
+            if (art instanceof android.graphics.drawable.AdaptiveIconDrawable) {
+                android.graphics.drawable.AdaptiveIconDrawable ad = (android.graphics.drawable.AdaptiveIconDrawable) art;
+                Drawable bg = ad.getBackground(), fg = ad.getForeground();
+                float bs = Math.max(fw, fh) * 1.5f;
+                if (bg != null) {
+                    bg.setBounds((int) (r.centerX() - bs / 2), (int) (r.centerY() - bs / 2), (int) (r.centerX() + bs / 2), (int) (r.centerY() + bs / 2));
+                    bg.setAlpha(255); bg.draw(c);
+                }
+                float gs = fh * 1.5f;
+                android.graphics.Rect gb = new android.graphics.Rect((int) (r.centerX() - gs / 2), (int) (r.centerY() - gs / 2),
+                        (int) (r.centerX() + gs / 2), (int) (r.centerY() + gs / 2));
+                if (fg != null) {
+                    fg.setBounds(gb.left, gb.top + px(3), gb.right, gb.bottom + px(3));
+                    fg.setColorFilter(k(90), android.graphics.PorterDuff.Mode.SRC_IN);
+                    fg.draw(c);
+                    fg.clearColorFilter();
+                    fg.setBounds(gb);
+                    fg.draw(c);
+                }
+            } else if (art != null) {
+                int iw = Math.max(1, art.getIntrinsicWidth()), ih = Math.max(1, art.getIntrinsicHeight());
+                float sc = Math.max(fw / (float) iw, fh / (float) ih);
+                float dw = iw * sc, dh = ih * sc;
+                art.setBounds((int) (r.centerX() - dw / 2), (int) (r.centerY() - dh / 2), (int) (r.centerX() + dw / 2), (int) (r.centerY() + dh / 2));
+                art.setAlpha(255); art.draw(c);
+            } else {
+                p.setColor(Color.rgb(236, 234, 230));
+                p.setTextSize(px(40));
+                p.setTextAlign(Paint.Align.CENTER);
+                c.drawText("\u2699", r.centerX(), r.centerY() + px(14), p);
+            }
+            return b;
+        }
+
+        private float chan(int[] a, float x, float y, int shift) {
+            x = Math.max(0f, Math.min(fw - 1.001f, x));
+            y = Math.max(0f, Math.min(fh - 1.001f, y));
+            int x0 = (int) x, y0 = (int) y;
+            float fx = x - x0, fy = y - y0;
+            float v00 = (a[y0 * fw + x0] >> shift) & 255, v10 = (a[y0 * fw + x0 + 1] >> shift) & 255;
+            float v01 = (a[(y0 + 1) * fw + x0] >> shift) & 255, v11 = (a[(y0 + 1) * fw + x0 + 1] >> shift) & 255;
+            return (v00 * (1 - fx) + v10 * fx) * (1 - fy) + (v01 * (1 - fx) + v11 * fx) * fy;
+        }
+
+        private void build() {
+            Bitmap content = renderContent();
+            int[] src = new int[fw * fh];
+            content.getPixels(src, 0, fw, 0, 0, fw, fh);
+            int[] out = new int[fw * fh], hl = new int[fw * fh];
+            float rad = fh * 0.22f, bw = fh * 0.15f;
+            float cx = fw / 2f, cy = fh / 2f, hx = fw / 2f - rad, hy = fh / 2f - rad;
+            float lx = -0.35f, ly = -0.94f;                       // light from the top, a touch from the left
+            for (int y = 0; y < fh; y++) {
+                for (int x = 0; x < fw; x++) {
+                    float px_ = x + 0.5f - cx, py_ = y + 0.5f - cy;
+                    float qx = Math.abs(px_) - hx, qy = Math.abs(py_) - hy;
+                    float ox = Math.max(qx, 0f), oy = Math.max(qy, 0f);
+                    float len = (float) Math.sqrt(ox * ox + oy * oy);
+                    float sdf = len + Math.min(Math.max(qx, qy), 0f) - rad;      // < 0 inside
+                    float dIn = -sdf;
+                    float cover = Math.max(0f, Math.min(1f, dIn + 0.5f));       // anti-aliased silhouette
+                    if (cover <= 0f) continue;
+                    // outward normal = gradient of the distance field
+                    float nx, ny;
+                    if (len > 1e-4f) { nx = ox / len * Math.signum(px_); ny = oy / len * Math.signum(py_); }
+                    else if (qx > qy) { nx = Math.signum(px_); ny = 0f; }
+                    else { nx = 0f; ny = Math.signum(py_); }
+                    float t = Math.max(0f, Math.min(1f, 1f - dIn / bw));        // 0 in the flat middle, 1 on the rim
+                    float shift = bw * 0.55f * t * t;                        // refraction: strongest at the rim
+                    float rr = chan(src, x + 0.5f - nx * shift * 0.92f, y + 0.5f - ny * shift * 0.92f, 16);
+                    float gg = chan(src, x + 0.5f - nx * shift, y + 0.5f - ny * shift, 8);
+                    float bb = chan(src, x + 0.5f - nx * shift * 1.08f, y + 0.5f - ny * shift * 1.08f, 0);
+                    out[y * fw + x] = Color.argb(Math.round(255 * cover), (int) rr, (int) gg, (int) bb);
+                    // light on the bevel: main highlight facing the lamp, a weaker bounce on the opposite side, hairline fresnel rim
+                    float nl = nx * lx + ny * ly;
+                    float s1 = (float) Math.pow(Math.max(0f, nl), 1.8) * (float) Math.pow(t, 0.8) * 1.35f;
+                    float s2 = (float) Math.pow(Math.max(0f, -nl), 2.4) * (float) Math.pow(t, 1.1) * 0.55f;
+                    float fres = (float) Math.pow(t, 3) * 0.42f;
+                    float a = Math.min(1f, s1 + s2 + fres) * cover;
+                    hl[y * fw + x] = Color.argb(Math.round(255 * a), 255, 255, 255);
+                }
+            }
+            refr = Bitmap.createBitmap(out, fw, fh, Bitmap.Config.ARGB_8888);
+            spec = Bitmap.createBitmap(hl, fw, fh, Bitmap.Config.ARGB_8888);
+        }
 
         @Override protected void onDraw(Canvas c) {
+            if (refr == null) build();
             int W = getWidth();
             float x0 = (W - fw) / 2f, y0 = depth, x1 = x0 + fw, y1 = depth + fh;
             float L = lit;
 
-            // contact shadow
+            // soft contact shadow
             c.save();
             c.translate(W / 2f, y1);
             c.scale(1f, 0.08f);
-            p.setColor(Color.WHITE); p.setShader(new RadialGradient(0, 0, fw * 0.55f, 0xC0000000, 0x00000000, Shader.TileMode.CLAMP));
+            p.setColor(Color.WHITE);
+            p.setShader(new RadialGradient(0, 0, fw * 0.55f, 0xC0000000, 0x00000000, Shader.TileMode.CLAMP));
             c.drawCircle(0, 0, fw * 0.55f, p);
             c.restore();
             p.setShader(null);
 
-            // faint gloss reflection in the black floor
+            // faint reflection in the black floor
             int layer = c.saveLayer(0, y1, W, getHeight(), null);
             c.save();
             c.scale(1f, -1f, W / 2f, y1);
-            drawIcon(c, x0, y0, x1, y1, 0.06f + 0.26f * L);
+            drawIcon(c, x0, y0, 0.06f + 0.26f * L);
             c.restore();
-            p.setColor(Color.WHITE); p.setShader(new android.graphics.LinearGradient(0, y1, 0, y1 + refl * 0.7f, 0x40000000, 0x00000000, Shader.TileMode.CLAMP));
+            p.setColor(Color.WHITE);
+            p.setShader(new android.graphics.LinearGradient(0, y1, 0, y1 + refl * 0.7f, 0x40000000, 0x00000000, Shader.TileMode.CLAMP));
             p.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN));
             c.drawRect(0, y1, W, getHeight(), p);
             p.setXfermode(null);
             p.setShader(null);
             c.restoreToCount(layer);
 
-            drawIcon(c, x0, y0, x1, y1, 1f);
+            drawIcon(c, x0, y0, 1f);
         }
 
-        private void drawIcon(Canvas c, float x0, float y0, float x1, float y1, float st) {
+        private void drawIcon(Canvas c, float x0, float y0, float st) {
             float L = lit;
-            RectF r = new RectF(x0, y0, x1, y1);
-            float rad = fh * 0.2f;                        // soft rounded rectangle, not a square
+            float rad = fh * 0.22f;
+            RectF r = new RectF(x0, y0, x0 + fw, y0 + fh);
             Path shape = new Path();
             shape.addRoundRect(r, rad, rad, Path.Direction.CW);
 
+            // refracted artwork
+            p.setColor(Color.WHITE);
+            p.setAlpha((int) (255 * st));
+            c.drawBitmap(refr, x0, y0, p);
+            p.setAlpha(255);
+
             int save = c.save();
             c.clipPath(shape);
-            p.setColor(Color.WHITE); p.setShader(new android.graphics.LinearGradient(0, y0, 0, y1,
-                    Color.rgb(46, 48, 52), Color.rgb(16, 17, 19), Shader.TileMode.CLAMP));
-            c.drawRect(r, p);
-            p.setShader(null);
-
-            int alpha = (int) (255 * st);
-            float rw = x1 - x0, rh = y1 - y0;
-            if (art instanceof android.graphics.drawable.AdaptiveIconDrawable) {
-                android.graphics.drawable.AdaptiveIconDrawable ad = (android.graphics.drawable.AdaptiveIconDrawable) art;
-                Drawable bg = ad.getBackground(), fg = ad.getForeground();
-                // background layer fills the whole rectangle
-                float bs = Math.max(rw, rh) * 1.5f;
-                android.graphics.Rect bb = new android.graphics.Rect((int) (r.centerX() - bs / 2), (int) (r.centerY() - bs / 2),
-                        (int) (r.centerX() + bs / 2), (int) (r.centerY() + bs / 2));
-                if (bg != null) { bg.setBounds(bb); bg.setAlpha((int) (alpha * (0.30f + 0.22f * L))); bg.draw(c); }
-                // glyph layer: a square sized to the rectangle's height, floating on a soft shadow
-                float gs = rh * 1.5f;
-                android.graphics.Rect gb = new android.graphics.Rect((int) (r.centerX() - gs / 2), (int) (r.centerY() - gs / 2),
-                        (int) (r.centerX() + gs / 2), (int) (r.centerY() + gs / 2));
-                if (fg != null) {
-                    fg.setBounds(gb.left, gb.top + px(3), gb.right, gb.bottom + px(3));
-                    fg.setColorFilter(k(90 * st), android.graphics.PorterDuff.Mode.SRC_IN);
-                    fg.setAlpha(alpha);
-                    fg.draw(c);
-                    fg.clearColorFilter();
-                    fg.setBounds(gb);
-                    fg.setAlpha(alpha);
-                    fg.draw(c);
-                }
-            } else if (art != null) {
-                // plain bitmap icon: scale to fill the rectangle (crop the overflow), keeps the logo centred and big
-                int iw = Math.max(1, art.getIntrinsicWidth()), ih = Math.max(1, art.getIntrinsicHeight());
-                float sc = Math.max(rw / iw, rh / ih);
-                float dw = iw * sc, dh = ih * sc;
-                art.setBounds((int) (r.centerX() - dw / 2), (int) (r.centerY() - dh / 2),
-                        (int) (r.centerX() + dw / 2), (int) (r.centerY() + dh / 2));
-                art.setAlpha(alpha);
-                art.draw(c);
-            } else {
-                p.setColor(Color.argb(alpha, 236, 234, 230));
-                p.setTextSize(px(56));
-                p.setTextAlign(Paint.Align.CENTER);
-                c.drawText("\u2699", r.centerX(), r.centerY() + px(19), p);
-            }
-
             // outside the beam the icon sinks into the dark
             p.setColor(k((1f - L) * 150 * st));
             c.drawRect(r, p);
-
-            // glass body: soft top gloss from the lamp
-            p.setColor(Color.WHITE); p.setShader(new android.graphics.LinearGradient(0, y0, 0, y0 + fh * 0.5f,
-                    w((18 + L * 70) * st), w(0), Shader.TileMode.CLAMP));
-            c.drawRect(r, p);
-            p.setShader(null);
-            // liquid gloss: a curved sheet of light across the upper third
-            c.save();
-            c.translate(r.centerX(), y0 - fh * 0.55f);
-            c.scale(1f, 0.62f);
-            p.setColor(Color.WHITE); p.setShader(new RadialGradient(0, 0, fw * 0.95f,
-                    new int[]{w(0), w(0), w((10 + L * 46) * st), w(0)}, new float[]{0f, 0.78f, 0.9f, 1f}, Shader.TileMode.CLAMP));
-            c.drawCircle(0, 0, fw * 0.95f, p);
-            c.restore();
-            p.setShader(null);
-            // edge refraction: the glass thickens toward the rim, darkening it slightly
-            p.setColor(Color.WHITE); p.setShader(new RadialGradient(r.centerX(), r.centerY(), fw * 0.75f,
-                    new int[]{0x00000000, 0x00000000, k(70 * st)}, new float[]{0f, 0.62f, 1f}, Shader.TileMode.CLAMP));
+            // gentle top light on the surface
+            p.setColor(Color.WHITE);
+            p.setShader(new android.graphics.LinearGradient(0, y0, 0, y0 + fh * 0.55f, w((8 + L * 40) * st), w(0), Shader.TileMode.CLAMP));
             c.drawRect(r, p);
             p.setShader(null);
             c.restoreToCount(save);
 
-            // rim light: a thin specular edge, bright on top where the lamp hits, gone at the bottom
-            p.setStyle(Paint.Style.STROKE);
-            p.setStrokeWidth(1.6f * dp);
-            p.setColor(Color.WHITE); p.setShader(new android.graphics.LinearGradient(0, y0, 0, y1,
-                    new int[]{w((60 + L * 195) * st), w((14 + L * 40) * st), w(4 * st)}, new float[]{0f, 0.4f, 1f}, Shader.TileMode.CLAMP));
-            RectF rim = new RectF(r.left + 0.8f * dp, r.top + 0.8f * dp, r.right - 0.8f * dp, r.bottom - 0.8f * dp);
-            c.drawRoundRect(rim, rad, rad, p);
-            // second, inner rim: the far wall of the glass seen through the surface
-            p.setStrokeWidth(1f * dp);
-            p.setColor(Color.WHITE); p.setShader(new android.graphics.LinearGradient(0, y0, 0, y1,
-                    new int[]{w(4 * st), w((10 + L * 30) * st), w((20 + L * 70) * st)}, new float[]{0f, 0.6f, 1f}, Shader.TileMode.CLAMP));
-            RectF inner = new RectF(r.left + 3.5f * dp, r.top + 3.5f * dp, r.right - 3.5f * dp, r.bottom - 3.5f * dp);
-            c.drawRoundRect(inner, rad - 3 * dp, rad - 3 * dp, p);
-            p.setStyle(Paint.Style.FILL);
-            p.setShader(null);
+            // rim highlights from the bevel slope, brighter when the lamp is on it
+            p.setColor(Color.WHITE);
+            p.setAlpha((int) (255 * (0.30f + 0.70f * L) * st));
+            c.drawBitmap(spec, x0, y0, p);
+            p.setAlpha(255);
         }
     }
 
