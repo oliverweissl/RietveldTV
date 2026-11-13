@@ -38,7 +38,8 @@ All drawing is in `app/src/main/java/dev/oliver/home/HomeActivity.java`. These a
 | What | Where | Example prompt |
 | --- | --- | --- |
 | Icon shape and size | `IconTile` (`fw`, `fh`) | "Make the icons 10% bigger." |
-| Icon look | `IconTile.onDraw` (dimming outside the beam, the yellow end-cut tab) | "Make the unlit icons brighter." or "Replace the yellow tab with a red one." |
+| Icon look | `IconTile` (`renderGlyph` logo-only, `renderPlate` whole icon, dimming and the yellow end-cut tab in `onDraw`) | "Make the unlit icons brighter." or "Replace the yellow tab with a red one." |
+| Icon style | `iconStyle` in `config.json`: `glyph` (logo only, default), `mono` (one-colour themed icon, Android 13+), `plate` (whole icon) | "Switch the icons to mono." |
 | Spotlight | `SceneView.build` (`topHalf`, `botHalf`, intensity `0.15f`, pool `0.36f`) | "Make the beam narrower and warmer." |
 | Spacing and zoom | `dial()` and `tile()` margins | "Space the apps further apart, shrink the neighbours more." |
 | Colours | `Color.rgb(...)` accents: red `205,30,38`, blue `30,70,200`, yellow `248,200,40` | "Replace the yellow accents with orange." |
@@ -55,6 +56,8 @@ adb exec-out screencap -p > shot.png      # Claude reads this image
 ```
 
 Press keys with `adb shell input keyevent DPAD_RIGHT` to check other focus states (first app, last app, Settings).
+
+**The README and project-page screenshot update themselves.** The repo ships a Claude Code hook (`.claude/settings.json`) that refreshes `docs/screenshot-widgets.png` from your TV every time Claude installs a new build. Claude then commits it with the change. Run `scripts/update-screenshots.sh` yourself if you ever need to refresh it by hand.
 
 ### Tips for good results
 

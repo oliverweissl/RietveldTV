@@ -30,6 +30,8 @@ final class Config {
     boolean showSettings = true;
     /** The small typing line "> 5 apps ready" in the top-left corner. Hidden automatically if a widget sits there. */
     boolean terminal = true;
+    /** "glyph" (default): logo only, no background plate; "mono": themed single-colour icon if the app has one; "plate": whole icon. */
+    String iconStyle = "glyph";
 
     static Config load(Context c) {
         String json = null;
@@ -60,6 +62,7 @@ final class Config {
             if (widgets != null) for (int i = 0; i < widgets.length(); i++) cfg.widgets.add(widgets.getJSONObject(i));
             cfg.showSettings = o.optBoolean("showSettings", true);
             cfg.terminal = o.optBoolean("terminal", true);
+            cfg.iconStyle = o.optString("iconStyle", "glyph");
             return cfg;
         } catch (Exception e) {
             Log.w(TAG, "config.json is not valid JSON, falling back to the default", e);

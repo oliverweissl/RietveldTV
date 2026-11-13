@@ -348,7 +348,7 @@ public class HomeActivity extends Activity {
     }
 
     private View tile(Drawable icon, boolean isBanner, final String name, final Runnable action) {
-        final IconTile g = new IconTile(this, icon, isBanner);
+        final IconTile g = new IconTile(this, icon, config.iconStyle, name.equals("Widgets") ? "+" : "\u2699");
         g.title = name;
         g.setFocusable(true);
         g.setClickable(true);
@@ -431,21 +431,28 @@ public class HomeActivity extends Activity {
     }
 
     /**
-     * One app as a flat, hard-edged rectangle in the De Stijl / Rietveld spirit: the app's own artwork fills a plane,
-     * nothing is glossed or refracted. The lamp does the work: lit tiles show their colour, the rest sink into the dark,
-     * and the focused tile gets a small yellow end-cut tab like the painted ends of the Red and Blue Chair.
+     * One app as a flat plane in the De Stijl / Rietveld spirit. By default ("glyph" style) only the app's logo is drawn,
+     * without its background plate, straight onto the black room: modern apps ship the logo as a separate transparent
+     * layer, and flat logo-on-colour icons (e.g. Netflix) have their background colour keyed out.
+     * "mono" uses the app's themed single-colour icon (Android 13+) when it has one; "plate" draws the whole icon.
+     * The lamp does the work: lit tiles show their colour, the rest sink into the dark, and the focused tile gets a small
+     * yellow end-cut tab like the painted ends of the Red and Blue Chair.
      */
     private class IconTile extends View {
         private final Drawable art;
+        private final String style, glyph;
         private final int fw = px(166), fh = px(97), depth = px(28), side = px(8), refl = px(32);
         String title = "";
         private float lit = 0f;
         private Bitmap content;
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        private static final int OFFWHITE = 0xFFF2F0F0;
 
-        IconTile(android.content.Context c, Drawable art, boolean banner) {
+        IconTile(android.content.Context c, Drawable art, String style, String glyph) {
             super(c);
             this.art = art;
+            this.style = style;
+            this.glyph = glyph;
         }
 
         int totalW() { return fw + side * 2; }
@@ -456,8 +463,8 @@ public class HomeActivity extends Activity {
             if (Math.abs(this.lit - lit) > 0.01f) { this.lit = lit; invalidate(); }
         }
 
-        /** The flat artwork: a solid plane, the app icon filling the rectangle. */
-        private Bitmap renderContent() {
+        /** The whole icon as a flat plane (the "plate" style). */
+        private Bitmap renderPlate() {
             Bitmap b = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
             Canvas c = new Canvas(b);
             RectF r = new RectF(0, 0, fw, fh);
@@ -482,30 +489,117 @@ public class HomeActivity extends Activity {
                 float dw = iw * sc, dh = ih * sc;
                 art.setBounds((int) (r.centerX() - dw / 2), (int) (r.centerY() - dh / 2), (int) (r.centerX() + dw / 2), (int) (r.centerY() + dh / 2));
                 art.setAlpha(255); art.draw(c);
-            } else {
-                p.setColor(Color.rgb(236, 234, 230));
-                p.setTextSize(px(40));
-                p.setTextAlign(Paint.Align.CENTER);
-                c.drawText("\u2699", r.centerX(), r.centerY() + px(14), p);
             }
             return b;
         }
 
+        /** Just the logo: transparent background, cropped to the logo's bounds and fitted into the tile. */
+        private Bitmap renderGlyph() {
+            Bitmap out = Bitmap.createBitmap(fw, fh, Bitmap.Config.ARGB_8888);
+            Canvas oc = new Canvas(out);
+            if (art == null) {                                  // Settings / Widgets: a plain symbol
+                p.setColor(OFFWHITE);
+                p.setTextAlign(Paint.Align.CENTER);
+                p.setTextSize(fh * 0.78f);
+                android.graphics.Rect tb = new android.graphics.Rect();
+                p.getTextBounds(glyph, 0, glyph.length(), tb);
+                oc.drawText(glyph, fw / 2f, fh / 2f - tb.exactCenterY(), p);
+                return out;
+            }
+            final int N = 480;
+            Bitmap src = Bitmap.createBitmap(N, N, Bitmap.Config.ARGB_8888);
+            Canvas sc = new Canvas(src);
+            boolean mono = false;
+            if (art instanceof android.graphics.drawable.AdaptiveIconDrawable) {
+                android.graphics.drawable.AdaptiveIconDrawable ad = (android.graphics.drawable.AdaptiveIconDrawable) art;
+                Drawable layer = null;
+                if (style.equals("mono") && android.os.Build.VERSION.SDK_INT >= 33) { layer = ad.getMonochrome(); mono = layer != null; }
+                if (layer == null) layer = ad.getForeground();
+                if (layer == null) return renderPlate();
+                layer.setBounds(0, 0, N, N);
+                layer.setAlpha(255);
+                layer.draw(sc);
+            } else {
+                art.setBounds(0, 0, N, N);
+                art.setAlpha(255);
+                art.draw(sc);
+                keyOutBackground(src);                          // flat logo-on-colour icon: drop the colour
+            }
+            int[] px_ = new int[N * N];
+            src.getPixels(px_, 0, N, 0, 0, N, N);
+            int minX = N, minY = N, maxX = -1, maxY = -1;
+            double luma = 0, sat = 0; int cnt = 0;
+            float[] hsv = new float[3];
+            for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) {
+                int c = px_[y * N + x], a = c >>> 24;
+                if (a < 24) continue;
+                if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+                if (a > 200) {
+                    Color.colorToHSV(c, hsv);
+                    luma += (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)); sat += hsv[1]; cnt++;
+                }
+            }
+            if (maxX < 0) return renderPlate();                  // nothing opaque: fall back to the whole icon
+            boolean tint = mono || (cnt > 0 && luma / cnt < 70 && sat / cnt < 0.25);   // dark neutral logo would vanish on black
+            int bw = maxX - minX + 1, bh = maxY - minY + 1;
+            float scale = Math.min(fw * 0.70f / bw, fh * 0.72f / bh);
+            float dw = bw * scale, dh = bh * scale;
+            Paint gp = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+            if (tint) gp.setColorFilter(new android.graphics.PorterDuffColorFilter(OFFWHITE, android.graphics.PorterDuff.Mode.SRC_IN));
+            oc.drawBitmap(src, new android.graphics.Rect(minX, minY, maxX + 1, maxY + 1),
+                    new RectF(fw / 2f - dw / 2f, fh / 2f - dh / 2f, fw / 2f + dw / 2f, fh / 2f + dh / 2f), gp);
+            return out;
+        }
+
+        /**
+         * Makes the icon's background transparent. The background colour is read per row from the left/right borders,
+         * so flat colours and vertical gradients both work; icons whose borders are not a plain backdrop are left alone.
+         */
+        private void keyOutBackground(Bitmap b) {
+            int w = b.getWidth(), h = b.getHeight();
+            int[] px_ = new int[w * h];
+            b.getPixels(px_, 0, w, 0, 0, w, h);
+            int[] rowBg = new int[h];
+            int valid = 0;
+            for (int y = 0; y < h; y++) {
+                int l = px_[y * w + 2], r = px_[y * w + w - 3];
+                if ((l >>> 24) >= 250 && (r >>> 24) >= 250 && dist(l, r) < 45f) {
+                    rowBg[y] = Color.rgb((Color.red(l) + Color.red(r)) / 2, (Color.green(l) + Color.green(r)) / 2, (Color.blue(l) + Color.blue(r)) / 2);
+                    valid++;
+                } else rowBg[y] = 0;
+            }
+            if (valid < h * 0.9f) return;                          // not a plain backdrop
+            int last = 0;
+            for (int y = 0; y < h; y++) { if (rowBg[y] != 0) last = rowBg[y]; else rowBg[y] = last; }
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    int c = px_[y * w + x];
+                    float a = Math.max(0f, Math.min(1f, (dist(c, rowBg[y]) - 22f) / 70f));
+                    if (a < 1f) px_[y * w + x] = (Math.round(a * 255) << 24) | (c & 0x00FFFFFF);
+                }
+            }
+            b.setPixels(px_, 0, w, 0, 0, w, h);
+        }
+
+        private float dist(int a, int b) {
+            int dr = Color.red(a) - Color.red(b), dg = Color.green(a) - Color.green(b), db = Color.blue(a) - Color.blue(b);
+            return (float) Math.sqrt(dr * dr + dg * dg + db * db);
+        }
+
         @Override protected void onDraw(Canvas c) {
-            if (content == null) content = renderContent();
+            if (content == null) content = style.equals("plate") && art != null ? renderPlate() : renderGlyph();
             float x0 = (getWidth() - fw) / 2f, y0 = depth, y1 = depth + fh;
             float L = lit;
-
-            // the plane
+            // outside the beam the tile sinks into the dark
             p.setColor(Color.WHITE);
             p.setShader(null);
+            p.setAlpha(Math.round(255 * (0.28f + 0.72f * L)));
             c.drawBitmap(content, x0, y0, p);
-            // outside the beam the plane sinks into the dark
-            p.setColor(Color.argb(Math.round((1f - L) * 150), 0, 0, 0));
-            c.drawRect(x0, y0, x0 + fw, y1, p);
+            p.setAlpha(255);
             // the yellow end-cut tab, only on the lit tile
             p.setColor(Color.argb(Math.round(255 * L), 248, 200, 40));
-            c.drawRect(x0, y1 + px(5), x0 + px(30), y1 + px(9), p);
+            float tx = x0 + (fw - px(30)) / 2f;
+            c.drawRect(tx, y1 + px(5), tx + px(30), y1 + px(9), p);
         }
     }
 

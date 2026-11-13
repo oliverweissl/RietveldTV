@@ -1,0 +1,15 @@
+{
+  "apps": [
+    "com.netflix.ninja",
+    "com.google.android.youtube.tv",
+    "com.apple.atve.androidtv.appletv",
+    "com.spotify.tv.android",
+    "com.google.android.youtube.tvmusic"
+  ],
+  "showSettings": true,
+  "widgets": [
+    { "type": "weather", "city": "Berlin", "position": "top-left", "days": 3 },
+    { "type": "clock", "label": "Tokyo", "timezone": "Asia/Tokyo", "position": "top-center" },
+    { "type": "clock", "position": "top-right" }
+  ]
+}
